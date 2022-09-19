@@ -26,8 +26,8 @@ def central_login(url, driver, permit):
     print("logging in to Central Square....")
     driver.get(url)
     driver.maximize_window()
-    central_user = ""
-    central_pass = ""
+    central_user = "usr"
+    central_pass = "pass"
     
     login = WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="txtUID"]'))
@@ -54,21 +54,50 @@ def central_login(url, driver, permit):
 
     print("successfully logged in")
 
-    time.sleep(10)
-
     driver.switch_to.frame("FRMPERMIT")
 
-    value = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnEdit']")
-    value.click()
-   
+    # Click edit
+    edit = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnEdit']")
+    edit.click()
 
-    print(value)
-   
+    time.sleep(5)
 
+    # Permit Info
+    status = "ISSUED"
+    desc = "Unit # 155 Unit was damaged by fire BP-2022-0788"
+    applyDate = "5/13/22"
+    expDate = "7/19/23"
+    issueDate = "7/19/22"
 
+    # Change Status
+    firstLetter = status[0]
+    driver.find_element(By.XPATH, "//input[@id = 'ctl09_C_ctl00_ddStatus_Input']").send_keys(firstLetter)
+    
+    # Change Dates 
+    applyDateField = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$calAppliedDate$dateInput']")
+    applyDateField.send_keys(Keys.CONTROL + "a")
+    applyDateField.send_keys(Keys.DELETE)
+    applyDateField.send_keys(applyDate)
+
+    expDateField = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$calOtherDate1$dateInput']")
+    expDateField.send_keys(Keys.CONTROL + "a")
+    expDateField.send_keys(Keys.DELETE)
+    expDateField.send_keys(expDate)
+
+    issDateField = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$calIssuedDate$dateInput']")
+    issDateField.send_keys(Keys.CONTROL + "a")
+    issDateField.send_keys(Keys.DELETE)
+    issDateField.send_keys(issueDate)
+    
+    # Change Description
+    descField = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$txtDescription']")
+    descField.send_keys(Keys.CONTROL + "a")
+    descField.send_keys(Keys.DELETE)
+    descField.send_keys(desc)
+
+    save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+    save.click()
 
     print('program finished')
-
-    
 
 central_login('https://vall-trk.aspgov.com/CommunityDevelopment/default.aspx', driver_setup(), 'BP22-00690')
