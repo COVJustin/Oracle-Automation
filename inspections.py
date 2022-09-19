@@ -26,8 +26,8 @@ def central_login(url, driver, permit):
     print("logging in to Central Square....")
     driver.get(url)
     driver.maximize_window()
-    central_user = #User name
-    central_pass = #Password
+    central_user = ""
+    central_pass = ""
     
     login = WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="txtUID"]'))
@@ -54,15 +54,11 @@ def central_login(url, driver, permit):
 
     print("successfully logged in")
 
-    
-    # pyautoGUI to access inspections tab
-    print(pg.moveTo(330, 1032))
-    print(pg.click())
-
     time.sleep(10)
 
-    
-    value = driver.find_element(By.XPATH, '//*[@id="ctl08_ddInspector_Arrow"]')
+    driver.switch_to.frame("FRMPERMIT")
+
+    value = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnEdit']")
     value.click()
    
 
@@ -75,4 +71,4 @@ def central_login(url, driver, permit):
 
     
 
-central_login('https://vall-trk.aspgov.com/CommunityDevelopment/default.aspx', driver_setup(), 'BP-2021-1431')
+central_login('https://vall-trk.aspgov.com/CommunityDevelopment/default.aspx', driver_setup(), 'BP22-00690')
