@@ -26,8 +26,8 @@ def central_login(url, driver, permit):
     print("logging in to Central Square....")
     driver.get(url)
     driver.maximize_window()
-    central_user = "aro"
-    central_pass = "Xbox1fanatic!"
+    central_user = "usr"
+    central_pass = "pass"
     
     login = WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="txtUID"]'))
@@ -227,16 +227,17 @@ def central_login(url, driver, permit):
 
     for i in range(0, len(data)):
         if (data[i][3] == "PAID" or data[i][3] == "DUE"):
-            feeType = driver.find_element(By.XPATH, "//a[contains(.,'" + feeDic[data[i][0]] +"')]")
-            row = feeType.find_element(By.XPATH, "..")
-            row2 = row.find_element(By.XPATH, "..")
-            feeInput = row2.find_element(By.XPATH, ".//input[contains(@id,'FeeAmount')]")
-            feeInput.send_keys(Keys.CONTROL + "a")
-            feeInput.send_keys(Keys.DELETE)
-            feeInput.send_keys(data[i][1])
-            driver.switch_to.parent_frame()
-            driver.find_element(By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)").click()
-            driver.switch_to.frame("FRMPERMIT")
+
+                feeType = driver.find_element(By.XPATH, "//a[contains(.,'" + feeDic[data[i][0]] +"')]")
+                row = feeType.find_element(By.XPATH, "..")
+                row2 = row.find_element(By.XPATH, "..")
+                feeInput = row2.find_element(By.XPATH, ".//input[contains(@id,'FeeAmount')]")
+                feeInput.send_keys(Keys.CONTROL + "a")
+                feeInput.send_keys(Keys.DELETE)
+                feeInput.send_keys(data[i][1])
+                driver.switch_to.parent_frame()
+                driver.find_element(By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)").click()
+                driver.switch_to.frame("FRMPERMIT")
 
     # Click edit
     edit = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnEdit']")
