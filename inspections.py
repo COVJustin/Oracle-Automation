@@ -49,94 +49,12 @@ def central_login(url, driver, permit):
     central_search.send_keys(permit)
     central_search.send_keys(Keys.ENTER)
 
-    time.sleep(8)
-
     print("successfully logged in")
 
-    driver.switch_to.frame("FRMPERMIT")
-
-    feeDic = {
-        "Plan Check Fee": "BLG-PLAN REVIEW FEE",
-        "Building Permit Fee": "BLG-BUILDING PERMIT",
-        "Title 24 Fee": "BLG-TITLE 24 ENERGY CONSERVATION REVIEW",
-        "Disable Access Review": "BLG-DISABLE ACCESS REVIEW",
-        "State SMIP Fee": "STATE-SMIP RESIDENTIAL",
-        "Mechanical Permit Fee": "BLG-MECHANICAL PERMIT",
-        "Electrical Permit Fee": "BLG-ELECTRICAL PERMIT",
-        "General Plan Update Surcharge": "GENERAL PLAN UPDATE SURCHARGE",
-        "Permit Streamlining Surcharge": "PERMIT STREAMLINING SURCHARGE",
-        "Surcharge - Building Technology Fee": "TECHNOLOGY SURCHARGE FEE",
-        "Surcharge - Engineering Technology Fee": "TECHNOLOGY SURCHARGE FEE",
-        "Surcharge - Planning Technology Fee": "TECHNOLOGY SURCHARGE FEE",
-        "State Building Standards Fee - Admin Surcharge": "STATE-BUILDING STANDARDS FEE-ADMIN SURCHARGE",
-        "State Building Standards Fee": "STATE-BUILDING STANDARDS FEE",
-        "CAL Green Building Standards Review": "BLG-CALGREEN BULDING STANDARDS REVIEW",
-        "Fire Site Plan Review": "SITE PLAN REVIEW",
-        "Assistant Civil Engineer Review/Inspection": "ASSISTANT CIVIL ENGINEER",
-        "C1 PW Waste Management Plan": "C1 GEN FD WASTE MGMT PLAN-BLG",
-        "C1, C2, C3 Permit Coordination Fees": "C1 PERMIT COORDINATION FEE",
-        "C3 SW Cost Constr. & Demo Recycling": "C3 SW COST CONSTR & DEMO RECYCLING",
-        "C2 SW Fee Constr. & Demo Recycling": "C2 SW FEE CONSTR & DEMO RECYCLING",
-        "Plumbing Permit Fee": "BLG-PLUMBING PERMIT",
-        "Associate Civil Engineer Review/Inspection": "ASSOCIATE CIVIL ENGINEER",
-        "Planning Over-the-Counter Permit Review Fee": "OVER THE COUNTER PERMIT REVIEW APPLICATION FEE"
-    }
-
-    with open("Oracle-Automation/Permits/" + permit + " Fees.csv", "r", newline='') as f:
-        reader = csv.reader(f)
-        data = list(reader)
-    data.pop(0)
-
-    transferred = [False] * len(data)
-
-    # Temp removed
-    #WebDriverWait(driver, '20').until(
-    #        EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnCancelEditAllFeesBottom']"))
-    #        ).click()
     WebDriverWait(driver, '20').until(
-            EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnEditAllFeesBottom']"))
-            ).click()
-    time.sleep(10)
-
-    for i in range(0, len(data)):
-        if (data[i][3] == "PAID" or data[i][3] == "DUE"):
-            print(feeDic[data[i][0]])
-            if feeDic[data[i][0]] == "STATE-BUILDING STANDARDS FEE" or feeDic[data[i][0]] == "STATE-BUILDING STANDARDS FEE-ADMIN SURCHARGE":
-                print("skipped")
-            elif data.count(data[i][0]) >= 1:
-                keywrds = [feeDic[item[0]] for item in data]
-                dupes = {value : [j for j, v in enumerate(keywrds) if value == v] for value in set(keywrds)}
-                listofSiblings = driver.find_elements(By.XPATH, "//a[text()='" + feeDic[data[i][0]] +"']")
-                tempDic = {}
-                count = 0
-                for h in listofSiblings:
-                    tempDic[dupes[data[i][0]][count]] : h.get_attribute('id')
-                    count += 1
-                siblingType = WebDriverWait(driver, '20').until(
-                        EC.presence_of_element_located((By.XPATH, "//input[@id()='" + tempDic[i] +"']"))
-                        )
-                sibRow = siblingType.find_element(By.XPATH, "..")
-                sibRow2 = sibRow.find_element(By.XPATH, "..")
-                siblingFeeInput = WebDriverWait(sibRow2, '20').until(
-                        EC.presence_of_element_located((By.XPATH, ".//input[contains(@id,'FeeAmount')]"))
-                        )
-                siblingFeeInput.send_keys(Keys.CONTROL + "a")
-                siblingFeeInput.send_keys(Keys.DELETE)
-                siblingFeeInput.send_keys(data[i][1])                    
-
-            else:
-                feeType = WebDriverWait(driver, '20').until(
-                        EC.presence_of_element_located((By.XPATH, "//a[text()='" + feeDic[data[i][0]] +"']"))
-                        )
-                row = feeType.find_element(By.XPATH, "..")
-                row2 = row.find_element(By.XPATH, "..")
-                feeInput = WebDriverWait(row2, '20').until(
-                        EC.presence_of_element_located((By.XPATH, ".//input[contains(@id,'FeeAmount')]"))
-                        )
-                feeInput.send_keys(Keys.CONTROL + "a")
-                feeInput.send_keys(Keys.DELETE)
-                feeInput.send_keys(data[i][1])
-   
+            EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+            )
+    driver.switch_to.frame("FRMPERMIT")   
 
     # Click edit
     WebDriverWait(driver, '20').until(
@@ -190,6 +108,10 @@ def central_login(url, driver, permit):
             EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$btnAddValuation']"))
             ).click()
     driver.switch_to.parent_frame()
+    innerframe = WebDriverWait(driver, '20').until(
+            EC.presence_of_element_located((By.NAME, 'rw'))
+            )
+    time.sleep(5)
     driver.switch_to.frame(innerframe)
     WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//strong[contains(.,'JOB VALUATION = $1.00/EA')]"))
@@ -211,15 +133,49 @@ def central_login(url, driver, permit):
             ).click()
 
     # Change Fees
+    feeDic = {
+        "Plan Check Fee": "BLG-PLAN REVIEW FEE",
+        "Building Permit Fee": "BLG-BUILDING PERMIT",
+        "Title 24 Fee": "BLG-TITLE 24 ENERGY CONSERVATION REVIEW",
+        "Disable Access Review": "BLG-DISABLE ACCESS REVIEW",
+        "State SMIP Fee": "STATE-SMIP RESIDENTIAL",
+        "Mechanical Permit Fee": "BLG-MECHANICAL PERMIT",
+        "Electrical Permit Fee": "BLG-ELECTRICAL PERMIT",
+        "General Plan Update Surcharge": "GENERAL PLAN UPDATE SURCHARGE",
+        "Permit Streamlining Surcharge": "PERMIT STREAMLINING SURCHARGE",
+        "Surcharge - Building Technology Fee": "TECHNOLOGY SURCHARGE FEE",
+        "Surcharge - Engineering Technology Fee": "TECHNOLOGY SURCHARGE FEE",
+        "Surcharge - Planning Technology Fee": "TECHNOLOGY SURCHARGE FEE",
+        "State Building Standards Fee - Admin Surcharge": "STATE-BUILDING STANDARDS FEE-ADMIN SURCHARGE",
+        "State Building Standards Fee": "STATE-BUILDING STANDARDS FEE",
+        "CAL Green Building Standards Review": "BLG-CALGREEN BULDING STANDARDS REVIEW",
+        "Fire Site Plan Review": "SITE PLAN REVIEW",
+        "Assistant Civil Engineer Review/Inspection": "ASSISTANT CIVIL ENGINEER",
+        "C1 PW Waste Management Plan": "C1 GEN FD WASTE MGMT PLAN-BLG",
+        "C1, C2, C3 Permit Coordination Fees": "C1 PERMIT COORDINATION FEE",
+        "C3 SW Cost Constr. & Demo Recycling": "C3 SW COST CONSTR & DEMO RECYCLING",
+        "C2 SW Fee Constr. & Demo Recycling": "C2 SW FEE CONSTR & DEMO RECYCLING",
+        "Plumbing Permit Fee": "BLG-PLUMBING PERMIT",
+        "Associate Civil Engineer Review/Inspection": "ASSOCIATE CIVIL ENGINEER",
+        "Planning Over-the-Counter Permit Review Fee": "OVER THE COUNTER PERMIT REVIEW APPLICATION FEE"
+    }
+
+    with open("Oracle-Automation/Permits/" + permit + " Fees.csv", "r", newline='') as f:
+        reader = csv.reader(f)
+        tempData = list(reader)
+    tempData.pop(0)
+    data = [x for x in tempData if x[3] != "PEND"]
+
+    transferred = [False] * len(data)
     while False in transferred:
         WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnAddFees']"))
             ).click()
         driver.switch_to.parent_frame()
-        innerframe = WebDriverWait(driver, '20').until(
+        innerframe2 = WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.NAME, 'rw'))
             )
-        driver.switch_to.frame(innerframe)
+        driver.switch_to.frame(innerframe2)
         check1 = 0
         check2 = 0
         check3 = 0
@@ -243,9 +199,7 @@ def central_login(url, driver, permit):
         check21 = 0
         check22 = 0
         for i in range(0, len(data)):
-            if data[i][3] == "PEND":
-                transferred[i] = True
-            elif (data[i][3] == "PAID" or data[i][3] == "DUE") and transferred[i] == False:
+            if (data[i][3] == "PAID" or data[i][3] == "DUE") and transferred[i] == False:
                 if data[i][0] == "Plan Check Fee" and check1 == 0:
                     check1 += 1
                     transferred[i] = True
@@ -399,6 +353,64 @@ def central_login(url, driver, permit):
             EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
             )
         driver.switch_to.frame("FRMPERMIT")
+
+    WebDriverWait(driver, '20').until(
+            EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnCancelEditAllFeesBottom']"))
+            ).click()
+    WebDriverWait(driver, '20').until(
+            EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnEditAllFeesBottom']"))
+            ).click()
+    time.sleep(10)
+
+    # Needs Potential Optimizing
+    for i in range(0, len(data)):
+        if (data[i][3] == "PAID" or data[i][3] == "DUE"):
+            keywrds = [feeDic[item[0]] for item in data]
+            if feeDic[data[i][0]] == "STATE-BUILDING STANDARDS FEE" or feeDic[data[i][0]] == "STATE-BUILDING STANDARDS FEE-ADMIN SURCHARGE":
+                print("skipped")
+            elif keywrds.count(feeDic[data[i][0]]) > 1:
+                dupes = {value : [j for j, v in enumerate(keywrds) if value == v] for value in set(keywrds)}
+                listofSiblings = driver.find_elements(By.XPATH, "//a[text()='" + feeDic[data[i][0]] +"']")
+                tempDic = {}
+                count = 0
+                for h in listofSiblings:
+                    tempDic[dupes[feeDic[data[i][0]]][count]] = h.get_attribute('id')
+                    count += 1
+                siblingType = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.ID, tempDic[i]))
+                        )
+                sibRow = siblingType.find_element(By.XPATH, "..")
+                sibRow2 = sibRow.find_element(By.XPATH, "..")
+                siblingFeeInput = WebDriverWait(sibRow2, '20').until(
+                        EC.presence_of_element_located((By.XPATH, ".//input[contains(@id,'FeeAmount')]"))
+                        )
+                siblingFeeInput.send_keys(Keys.CONTROL + "a")
+                siblingFeeInput.send_keys(Keys.DELETE)
+                siblingFeeInput.send_keys(data[i][1])                    
+
+            else:
+                feeType = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//a[text()='" + feeDic[data[i][0]] +"']"))
+                        )
+                row = feeType.find_element(By.XPATH, "..")
+                row2 = row.find_element(By.XPATH, "..")
+                feeInput = WebDriverWait(row2, '20').until(
+                        EC.presence_of_element_located((By.XPATH, ".//input[contains(@id,'FeeAmount')]"))
+                        )
+                feeInput.send_keys(Keys.CONTROL + "a")
+                feeInput.send_keys(Keys.DELETE)
+                feeInput.send_keys(data[i][1])
+    driver.switch_to.parent_frame()
+    WebDriverWait(driver, '20').until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)"))
+            ).click()
+    WebDriverWait(driver, '20').until(
+            EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+            )
+    driver.switch_to.frame("FRMPERMIT")
+    WebDriverWait(driver, '20').until(
+            EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnSaveAllFeesBottom']"))
+            ).click()
 
     print('program finished')
 
