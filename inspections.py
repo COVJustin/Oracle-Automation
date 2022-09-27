@@ -27,8 +27,8 @@ def central_login(url, driver, permit):
     print("logging in to Central Square....")
     driver.get(url)
     driver.maximize_window()
-    central_user = "aro"
-    central_pass = "Xbox1fanatic!"
+    central_user = "usr"
+    central_pass = "pass"
     
     login = WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="txtUID"]'))
@@ -61,14 +61,14 @@ def central_login(url, driver, permit):
     # Permit Info
     permType = "RESIDENTIAL"
 
-    status = "ISSUED"
+    status = "EXPIRED"
     desc = "675 SQ FT attached aluminum patio cover w/ electrical"
     applyDate = "1/25/21"
     expDate = "3/31/22"
     issueDate = "5/26/21"
 
     valuation = "20,650.00"
-
+    
     # Change Reviews
     reviewDic = {
         "Planning": "]/ul/li[12]/div/span[3]",
@@ -170,10 +170,10 @@ def central_login(url, driver, permit):
                     ).click()
             editCounter += 1
             driver.switch_to.parent_frame()
-            innerframe = WebDriverWait(driver, '20').until(
+            innerframe2 = WebDriverWait(driver, '20').until(
                     EC.presence_of_element_located((By.NAME, 'rw'))
                     )
-            driver.switch_to.frame(innerframe)
+            driver.switch_to.frame(innerframe2)
             WebDriverWait(driver, '20').until(
                     EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_calReceivedDate_dateInput']"))
                     )
@@ -192,8 +192,10 @@ def central_login(url, driver, permit):
             driver.switch_to.frame("FRMPERMIT")
 
     # Click edit
+    driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+    time.sleep(2)
     WebDriverWait(driver, '20').until(
-            EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnEdit']"))
+            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
             ).click()
 
     # Change Status
@@ -238,11 +240,11 @@ def central_login(url, driver, permit):
                 EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$btnAddValuation']"))
                 ).click()
         driver.switch_to.parent_frame()
-        innerframe = WebDriverWait(driver, '20').until(
+        innerframe3 = WebDriverWait(driver, '20').until(
                 EC.presence_of_element_located((By.NAME, 'rw'))
                 )
         time.sleep(5)
-        driver.switch_to.frame(innerframe)
+        driver.switch_to.frame(innerframe3)
         WebDriverWait(driver, '20').until(
                 EC.presence_of_element_located((By.XPATH, "//strong[contains(.,'JOB VALUATION = $1.00/EA')]"))
                 ).click()
@@ -261,7 +263,7 @@ def central_login(url, driver, permit):
     WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$imgBtnSaveAllValuationsTop']"))
             ).click()
-
+    
     # Change Fees (Needs Optimization)
     feeDic = {
         "Plan Check Fee": "BLG-PLAN REVIEW FEE",
@@ -354,10 +356,16 @@ def central_login(url, driver, permit):
             EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnAddFees']"))
             ).click()
         driver.switch_to.parent_frame()
-        innerframe2 = WebDriverWait(driver, '20').until(
+        innerframe4 = WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.NAME, 'rw'))
             )
-        driver.switch_to.frame(innerframe2)
+        driver.switch_to.frame(innerframe4)
+        WebDriverWait(driver, '20').until(
+            EC.presence_of_element_located((By.XPATH, "//input[@id = 'ctl08_imgBtnCancel']"))
+            )
+        WebDriverWait(driver, '20').until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@id = 'ctl08_imgBtnCancel']"))
+            )
         check1 = 0
         check2 = 0
         check3 = 0
@@ -886,7 +894,7 @@ def central_login(url, driver, permit):
             keywrds = [feeDic[item[0]] for item in data]
             if feeDic[data[i][0]] == "STATE-BUILDING STANDARDS FEE" or feeDic[data[i][0]] == "STATE-BUILDING STANDARDS FEE-ADMIN SURCHARGE":
                 print("skipped")
-            if feeDic[data[i][0]] == "C1 PERMIT COORDINATION FEE":
+            elif feeDic[data[i][0]] == "C1 PERMIT COORDINATION FEE":
                 coordType1 = WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, "//a[text()='" + feeDic[data[i][0]] +"']"))
                         )
