@@ -9,6 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 from datetime import datetime as dt
+import locale
 import time
 import pandas as pd
 import csv
@@ -354,12 +355,16 @@ def central_login(url, driver, permit):
     while False in transferred:
         WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnAddFees']"))
+            )
+        WebDriverWait(driver, '20').until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnAddFees']"))
             ).click()
         driver.switch_to.parent_frame()
         innerframe4 = WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.NAME, 'rw'))
             )
         driver.switch_to.frame(innerframe4)
+        time.sleep(5)
         WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//input[@id = 'ctl08_imgBtnCancel']"))
             )
@@ -618,7 +623,7 @@ def central_login(url, driver, permit):
                     WebDriverWait(driver, '20').until(
                         EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'SENIOR CIVIL ENGINEER = QTY*164')]"))
                         ).click()
-                elif (data[i][0] == "Encroachment Working w/o a Permit" or data[i][0] == "Excavation Working w/o a Permit" or "Penalty Fee for Work Done w/o Permit") and check29 == 0:
+                elif (data[i][0] == "Encroachment Working w/o a Permit" or data[i][0] == "Excavation Working w/o a Permit" or data[i][0] == "Penalty Fee for Work Done w/o Permit") and check29 == 0:
                     check29 += 1
                     transferred[i] = True
                     WebDriverWait(driver, '20').until(
@@ -871,22 +876,36 @@ def central_login(url, driver, permit):
                         EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'BLG-ADMINISTRATIVE CITATION-1 = 267')]"))
                         ).click()
         WebDriverWait(driver, '20').until(
-            EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$imgBtnAdd']"))
-            ).click()
-        time.sleep(15)
+                EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$imgBtnAdd']"))
+                ).click()
         driver.switch_to.parent_frame()
         WebDriverWait(driver, '20').until(
-            EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-            )
+                EC.invisibility_of_element_located((By.XPATH, "//div[@class='TelerikModalOverlay']"))
+                )
+        WebDriverWait(driver, '20').until(
+                EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                )
         driver.switch_to.frame("FRMPERMIT")
-
+        driver.switch_to.parent_frame()
+        WebDriverWait(driver, '20').until(
+                EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                )
+        WebDriverWait(driver, '20').until(
+                EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                )
+        driver.switch_to.frame("FRMPERMIT")
     WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnCancelEditAllFeesBottom']"))
             ).click()
     WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnEditAllFeesBottom']"))
-            ).click()
-    time.sleep(10)
+            )
+    driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+    time.sleep(2)
+    driver.find_element(By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnEditAllFeesBottom']").click()
+    WebDriverWait(driver, '20').until(
+            EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnSaveAllFeesBottom']"))
+            )
 
     # Needs Potential Optimizing
     for i in range(0, len(data)):
@@ -968,7 +987,13 @@ def central_login(url, driver, permit):
             EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
             )
     driver.switch_to.frame("FRMPERMIT")
-    time.sleep(5)
+    total = 0
+    for i in range(0, len(data)):
+        total += float(data[i][1])
+    curSum = driver.find_element(By.XPATH, "//a[@id='ctl12_C_ctl00_lnkBtnFeesDue']").text
+    while float(curSum.replace(",","").replace("$","")) != total:
+        time.sleep(5)
+        curSum = driver.find_element(By.XPATH, "//a[@id='ctl12_C_ctl00_lnkBtnFeesDue']").text
     WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnSaveAllFeesBottom']"))
             ).click()
