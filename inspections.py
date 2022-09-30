@@ -26,16 +26,10 @@ def driver_setup():
     return driver
 
 # function to log into Central Square & Oracle and search permits
-def login(url, url2, driver, permit):
+def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, oracle_user, oracle_pass, central_user, central_pass):
     print("logging in to Oracle....")
     driver.get(url2)
     driver.maximize_window()
-    oracle_user = "usr"
-    oracle_pass = "pass"
-    central_user = "usr"
-    central_pass = "pass"
-    downloadFileLocation = "C:/Users/amadeo.rosario/Downloads/"
-    permitFileLocation = "C:/Users/amadeo.rosario/Documents/Permit List/Code/Oracle-Automation/Permits/"
     
     WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//oj-menu-button[@id='switchProfileMenu']/button/div"))
@@ -79,6 +73,7 @@ def login(url, url2, driver, permit):
     print("successfully logged in")
 
     # Get Basic Permit Info
+    time.sleep(1)
     oracleStatus = WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//div[@id='overviewApplicationInformation']/div/div/div/div[2]/span"))
             ).text
@@ -132,7 +127,7 @@ def login(url, url2, driver, permit):
             EC.presence_of_element_located((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
             ).click()
     time.sleep(7.5)
-    shutil.move(downloadFileLocation + 'Fees and Payments.csv', permitFileLocation + permit + ' Fees.csv')
+    shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
 
     # Get Inspections
     WebDriverWait(driver, '20').until(
@@ -142,7 +137,7 @@ def login(url, url2, driver, permit):
             EC.presence_of_element_located((By.CSS_SELECTOR, "#ice_inspection_list-Download-DownloadButton .psc-sui-icon-placeholder"))
             ).click()
     time.sleep(7.5)
-    shutil.move(downloadFileLocation + 'Inspection.csv', permitFileLocation + permit + ' Inspection.csv')
+    shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
 
     # Get Reviews
     WebDriverWait(driver, '20').until(
@@ -264,7 +259,7 @@ def login(url, url2, driver, permit):
                 notes += commentDic[tempCheck]
             df2 = pd.DataFrame([[date1, revtype, reviewer, date2, result, date3, notes]],columns=["date1", "revtype", "reviewer", "date2", "result", "date3", "notes"])
             df = df.append(df2,ignore_index=True)
-    df.to_csv(permitFileLocation + permit + " Reviews.csv", index=False, header=False)
+    df.to_csv(permitFileLocation + "/" + permit + " Reviews.csv", index=False, header=False)
 
     print("logging in to Central Square....")
     driver.execute_script("window.open('https://www.google.com/', 'new_window')")
@@ -488,36 +483,25 @@ def login(url, url2, driver, permit):
         driver.find_element(By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)").click()
     except NoSuchElementException:
         print("Valid date")
-    WebDriverWait(driver, '20').until(
-            EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-            )
-    driver.switch_to.frame("FRMPERMIT")
     try:
         time.sleep(5)
-        driver.switch_to.parent_frame()
-        innerframe3 = WebDriverWait(driver, '20').until(
-                EC.presence_of_element_located((By.NAME, 'rwEvents'))
-                )
+        innerframe3 = driver.find_element(By.NAME, 'rwEvents')
         driver.switch_to.frame(innerframe3)
-        driver.find_element(By.XPATH, "//input[@id='btnNo0']")
-        WebDriverWait(driver, '20').until(
-            EC.element_to_be_clickable((By.XPATH, "//input[@id='btnNo0']"))
-            ).click()
+        driver.find_element(By.XPATH, "//input[@id='btnNo0']").click()
         WebDriverWait(driver, '20').until(
             EC.element_to_be_clickable((By.XPATH, "//input[@id='btnClose']"))
             ).click()
         driver.switch_to.parent_frame()
-        WebDriverWait(driver, '20').until(
-            EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-            )
-        driver.switch_to.frame("FRMPERMIT")
-        time.sleep(5)
-        WebDriverWait(driver, '20').until(
-                EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
-                )
     except NoSuchElementException:
         print("Valid expiration")
-
+    WebDriverWait(driver, '20').until(
+        EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+        )
+    driver.switch_to.frame("FRMPERMIT")
+    time.sleep(5)
+    WebDriverWait(driver, '20').until(
+            EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+            )
     """
     # Change Valuation
     try:
@@ -1287,5 +1271,3 @@ def login(url, url2, driver, permit):
             ).click()
 
     print('program finished')
-
-login('https://vall-trk.aspgov.com/CommunityDevelopment/default.aspx', 'https://emwp.fa.us2.oraclecloud.com/fscmUI/publicSector.html', driver_setup(), 'BP-2021-0126')
