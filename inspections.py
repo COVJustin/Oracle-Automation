@@ -11,6 +11,7 @@ from selenium.common.exceptions import NoSuchElementException
 from datetime import datetime as dt
 import shutil
 import re
+import math
 import os
 import time
 import pandas as pd
@@ -85,15 +86,17 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
     oracleApplyDate = WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//div[@id='overviewApplicationInformation']/div/div/div/div[6]/div"))
             ).text
-    oracleExpDate = ""
-    try:
-        oracleExpDate += driver.find_element(By.XPATH, "//div[@id='overviewApplicationInformation']/div[2]/div/div[2]/div[2]/span").text
-    except NoSuchElementException:
-        print("No expiration date")
     oracleIssDate = ""
     try:
         oracleIssDate += driver.find_element(By.XPATH, "//div[@id='overviewApplicationInformation']/div[2]/div/div/div[2]").text
     except NoSuchElementException:
+        print("No date")
+    oracleExpDate = ""
+    try:
+        oracleExpDate += driver.find_element(By.XPATH, "//div[@id='overviewApplicationInformation']/div[2]/div/div[2]/div[2]/span").text
+    except NoSuchElementException:
+        oracleExpDate = oracleIssDate
+        oracleIssDate = ""
         print("No issue date")
     
     # Get Valuation & Type (Not sure how to tackle ATM)
@@ -130,6 +133,7 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
     shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
 
     # Get Inspections
+    skipInspec = False
     WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//div/ul/li[7]/a/span/span"))
             ).click()
@@ -137,60 +141,104 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
             EC.presence_of_element_located((By.CSS_SELECTOR, "#ice_inspection_list-Download-DownloadButton .psc-sui-icon-placeholder"))
             ).click()
     time.sleep(7.5)
-    shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
+    try:
+        driver.find_element(By.XPATH, "//button[@id='ojAlertDialogOKBtn-0']/div/span").click()
+        time.sleep(2)
+        skipInspec = True
+    except NoSuchElementException:
+        shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
 
     # Get Reviews
+    skipRev = False
     WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//span[@id='permitinfoLabel']"))
             ).click()
     WebDriverWait(driver, '20').until(
             EC.element_to_be_clickable((By.XPATH, "//li[6]/ul/li[2]/a/span"))
             ).click()
-    df = pd.DataFrame(columns=["date1", "revtype", "reviewer", "date2", "result", "date3", "notes"])
-    cycleCount = WebDriverWait(driver, '20').until(
-            EC.presence_of_element_located((By.XPATH, "//label[@id='HeaderPlanReviewCycleHeaderLabel|label']"))
-            ).text
-    cycleCount = int(cycleCount[-1])
-    cycleTracker = cycleCount
-    commentDic = {}
     WebDriverWait(driver, '20').until(
-            EC.presence_of_element_located((By.XPATH, "//a[@id='prViewPlanCommentsLinkLeft']/span"))
-            ).click()
+            EC.element_to_be_clickable((By.XPATH, "//input[@id='addPlanReview']"))
+            )
+    time.sleep(5)
     try:
-        time.sleep(5)
-        driver.find_element(By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(1) .oj-flex-item .oj-flex-item:nth-child(1)")
-        commentCount = WebDriverWait(driver, '20').until(
-                    EC.presence_of_all_elements_located((By.CLASS_NAME, "psc-lnp-review-panel"))
-                    )
-        for i in range(len(commentCount)):
-            commentCycleNum = WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(" + str(i + 1) + ") .oj-flex-item .oj-flex-item:nth-child(1)"))
-                    ).text[-1]
-            commentRevAndType = WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(" + str(i + 1) + ") .oj-flex-item .oj-flex-item:nth-child(2)"))
-                    ).text.split(" | ")
-            commentRev = commentRevAndType[0]
-            commentType = commentRevAndType[1]
-            commentText = ""
-            commentTextList = WebDriverWait(driver, '20').until(
-                    EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(" + str(i + 1) + ") p"))
-                    )
-            for x in commentTextList:
-                commentText += x.text
-            commentDic[commentCycleNum + commentRev + commentType] = commentText
-    except NoSuchElementException:
-        print("no comments")
-    WebDriverWait(driver, '20').until(
-            EC.presence_of_element_located((By.XPATH, "//div[@id='planReviewViewCommentsModal']/div/button/div"))
-            ).click()
-    if cycleCount != 1:
-        for i in range(cycleCount):
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//a[@id='prChangeCycleLink']/span"))
-                    ).click()
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//tr[" + str(cycleTracker) + "]/td[8]/div/td/button/div/span"))
-                    ).click()
+        cycleCount = driver.find_element(By.XPATH, "//label[@id='HeaderPlanReviewCycleHeaderLabel|label']").text
+        df = pd.DataFrame(columns=["date1", "revtype", "reviewer", "date2", "result", "date3", "notes"])
+        cycleCount = int(cycleCount[-1])
+        cycleTracker = cycleCount
+        commentDic = {}
+        WebDriverWait(driver, '20').until(
+                EC.presence_of_element_located((By.XPATH, "//a[@id='prViewPlanCommentsLinkLeft']/span"))
+                ).click()
+        try:
+            time.sleep(5)
+            driver.find_element(By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(1) .oj-flex-item .oj-flex-item:nth-child(1)")
+            commentCount = WebDriverWait(driver, '20').until(
+                        EC.presence_of_all_elements_located((By.CLASS_NAME, "psc-lnp-review-panel"))
+                        )
+            for i in range(len(commentCount)):
+                commentCycleNum = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(" + str(i + 1) + ") .oj-flex-item .oj-flex-item:nth-child(1)"))
+                        ).text[-1]
+                commentRevAndType = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(" + str(i + 1) + ") .oj-flex-item .oj-flex-item:nth-child(2)"))
+                        ).text.split(" | ")
+                commentRev = commentRevAndType[0]
+                commentType = commentRevAndType[1]
+                commentText = ""
+                commentTextList = WebDriverWait(driver, '20').until(
+                        EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(" + str(i + 1) + ") p"))
+                        )
+                for x in commentTextList:
+                    commentText += x.text
+                commentDic[commentCycleNum + commentRev + commentType] = commentText
+        except NoSuchElementException:
+            print("no comments")
+        WebDriverWait(driver, '20').until(
+                EC.presence_of_element_located((By.XPATH, "//div[@id='planReviewViewCommentsModal']/div/button/div"))
+                ).click()
+        if cycleCount != 1:
+            for i in range(cycleCount):
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//a[@id='prChangeCycleLink']/span"))
+                        ).click()
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//tr[" + str(cycleTracker) + "]/td[8]/div/td/button/div/span"))
+                        ).click()
+                body = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
+                        )
+                rowCount = WebDriverWait(body, '20').until(
+                        EC.presence_of_all_elements_located((By.TAG_NAME, "tr"))
+                        )
+                header = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//label[@id='HeaderPlanReviewOpenByInfoLff|label']"))
+                        ).text
+                date1 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', header)[0]
+                for j in range(len(rowCount)):
+                    revtype = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
+                        ).text
+                    reviewer = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
+                        ).text
+                    date2 = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
+                        ).text
+                    result = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionStatusUserTable3_" + str(j) + "']"))
+                        ).text
+                    date3temp = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionDttmUserTable_" + str(j) + "']"))
+                        ).text
+                    date3 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)[0]
+                    notes = ""
+                    tempCheck = str(i + 1) + reviewer + revtype
+                    if tempCheck in commentDic:
+                        notes += commentDic[tempCheck]
+                    df2 = pd.DataFrame([[date1, revtype, reviewer, date2, result, date3, notes]],columns=["date1", "revtype", "reviewer", "date2", "result", "date3", "notes"])
+                    df = df.append(df2,ignore_index=True)
+                cycleTracker -= 1
+        else:
             body = WebDriverWait(driver, '20').until(
                     EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
                     )
@@ -198,8 +246,8 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
                     EC.presence_of_all_elements_located((By.TAG_NAME, "tr"))
                     )
             header = WebDriverWait(driver, '20').until(
-            		EC.presence_of_element_located((By.XPATH, "//label[@id='HeaderPlanReviewOpenByInfoLff|label']"))
-            		).text
+                    EC.presence_of_element_located((By.XPATH, "//label[@id='HeaderPlanReviewOpenByInfoLff|label']"))
+                    ).text
             date1 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', header)[0]
             for j in range(len(rowCount)):
                 revtype = WebDriverWait(driver, '20').until(
@@ -219,47 +267,14 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
                     ).text
                 date3 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)[0]
                 notes = ""
-                tempCheck = str(i + 1) + reviewer + revtype
+                tempCheck = str(1) + reviewer + revtype
                 if tempCheck in commentDic:
                     notes += commentDic[tempCheck]
                 df2 = pd.DataFrame([[date1, revtype, reviewer, date2, result, date3, notes]],columns=["date1", "revtype", "reviewer", "date2", "result", "date3", "notes"])
                 df = df.append(df2,ignore_index=True)
-            cycleTracker -= 1
-    else:
-        body = WebDriverWait(driver, '20').until(
-                EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
-                )
-        rowCount = WebDriverWait(body, '20').until(
-                EC.presence_of_all_elements_located((By.TAG_NAME, "tr"))
-                )
-        header = WebDriverWait(driver, '20').until(
-                EC.presence_of_element_located((By.XPATH, "//label[@id='HeaderPlanReviewOpenByInfoLff|label']"))
-                ).text
-        date1 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', header)[0]
-        for j in range(len(rowCount)):
-            revtype = WebDriverWait(driver, '20').until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
-                ).text
-            reviewer = WebDriverWait(driver, '20').until(
-                EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
-                ).text
-            date2 = WebDriverWait(driver, '20').until(
-                EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
-                ).text
-            result = WebDriverWait(driver, '20').until(
-                EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionStatusUserTable3_" + str(j) + "']"))
-                ).text
-            date3temp = WebDriverWait(driver, '20').until(
-                EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionDttmUserTable_" + str(j) + "']"))
-                ).text
-            date3 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)[0]
-            notes = ""
-            tempCheck = str(i + 1) + reviewer + revtype
-            if tempCheck in commentDic:
-                notes += commentDic[tempCheck]
-            df2 = pd.DataFrame([[date1, revtype, reviewer, date2, result, date3, notes]],columns=["date1", "revtype", "reviewer", "date2", "result", "date3", "notes"])
-            df = df.append(df2,ignore_index=True)
-    df.to_csv(permitFileLocation + "/" + permit + " Reviews.csv", index=False, header=False)
+        df.to_csv(permitFileLocation + "/" + permit + " Reviews.csv", index=False, header=False)
+    except NoSuchElementException:
+        skipRev = True
 
     print("logging in to Central Square....")
     driver.execute_script("window.open('https://www.google.com/', 'new_window')")
@@ -332,110 +347,112 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
         "Rejected": "DENIED",
         "Canceled": "WITHDRAWN"
     }
-    with open("Oracle-Automation/Permits/" + permit + " Reviews.csv", "r", newline='') as file:
-        reader2 = csv.reader(file)
-        reviewData = list(reader2)
-    cycleCounter = 0
-    editCounter = 0
-    dateTrack = dt.strptime("1/1/01", "%m/%d/%y")
-    for i in range(0, len(reviewData)):
-        if reviewData[i][1] in reviewDic:
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
-                    ).click()
-            driver.switch_to.parent_frame()
-            innerframe = WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.NAME, 'rw'))
-                    )
-            driver.switch_to.frame(innerframe)
-            currDate = dt.strptime(reviewData[i][0], "%m/%d/%y")
-            if currDate > dateTrack:
-                cycleCounter += 1
-                dateTrack = currDate
-            WebDriverWait(driver, '20').until(
-                    EC.element_to_be_clickable((By.XPATH, "//div/ul/li[" + str(eval('3 + ' + str(cycleCounter))) + "]/div/span[2]"))
-                    ).click()
-            WebDriverWait(driver, '20').until(
-                    EC.element_to_be_clickable((By.XPATH, "//li[" + str(eval('3 + ' + str(cycleCounter))) + reviewDic[reviewData[i][1]]))
-                    ).click()
-            time.sleep(2)
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_ddContactName_Input']"))
-                    ).click()
-            try:
-                time.sleep(2.5)
-                driver.find_element(By.XPATH, "//li[contains(.,'" + reviewData[i][2].upper() + "')]").click()
-            except NoSuchElementException:
+
+    if skipRev == False:
+        with open("Oracle-Automation/Permits/" + permit + " Reviews.csv", "r", newline='', encoding='utf8') as file:
+            reader2 = csv.reader(file)
+            reviewData = list(reader2)
+        cycleCounter = 0
+        editCounter = 0
+        dateTrack = dt.strptime("1/1/01", "%m/%d/%y")
+        for i in range(0, len(reviewData)):
+            if reviewData[i][1] in reviewDic:
                 WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//a[@id='ctl08_ddContactName_Arrow']"))
-                    ).click()
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_ddStatus_Input']"))
-                    ).click()
-            time.sleep(1)
-            WebDriverWait(driver, '20').until(
-                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + reviewStatusDic[reviewData[i][4]] + "')]"))
-                    ).click()
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_calSentDate_dateInput']"))
-                    )
-            sentDateField = driver.find_element(By.XPATH, "//input[@id='ctl08_calSentDate_dateInput']")
-            sentDateField.send_keys(Keys.CONTROL + "a")
-            sentDateField.send_keys(Keys.DELETE)
-            sentDateField.send_keys(reviewData[i][0])
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_calDueDate_dateInput']"))
-                    )
-            dueDateField = driver.find_element(By.XPATH, "//input[@id='ctl08_calDueDate_dateInput']")
-            dueDateField.send_keys(Keys.CONTROL + "a")
-            dueDateField.send_keys(Keys.DELETE)
-            dueDateField.send_keys(reviewData[i][3])
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_txtRemarks']"))
-                    )
-            remarks = driver.find_element(By.XPATH, "//input[@id='ctl08_txtRemarks']")
-            remarks.send_keys("transferred from oracle (program)")
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//textarea[@id='ctl08_txtNote']"))
-                    )
-            note = driver.find_element(By.XPATH, "//textarea[@id='ctl08_txtNote']")
-            note.send_keys(reviewData[i][6])
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
-                    ).click()
-            driver.switch_to.parent_frame()
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)"))
-                    ).click()
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-                    )
-            driver.switch_to.frame("FRMPERMIT")
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_rlvReviews_ctrl" + str(editCounter) + "_btnEdit']"))
-                    ).click()
-            editCounter += 1
-            driver.switch_to.parent_frame()
-            innerframe2 = WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.NAME, 'rw'))
-                    )
-            driver.switch_to.frame(innerframe2)
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_calReceivedDate_dateInput']"))
-                    )
-            recDate = driver.find_element(By.XPATH, "//input[@id='ctl08_calReceivedDate_dateInput']")
-            recDate.send_keys(Keys.CONTROL + "a")
-            recDate.send_keys(Keys.DELETE)
-            recDate.send_keys(reviewData[i][5])
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
-                    ).click()
-            time.sleep(5)
-            driver.switch_to.parent_frame()
-            WebDriverWait(driver, '20').until(
-                    EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-                    )
-            driver.switch_to.frame("FRMPERMIT")
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
+                        ).click()
+                driver.switch_to.parent_frame()
+                innerframe = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.NAME, 'rw'))
+                        )
+                driver.switch_to.frame(innerframe)
+                currDate = dt.strptime(reviewData[i][0], "%m/%d/%y")
+                if currDate > dateTrack:
+                    cycleCounter += 1
+                    dateTrack = currDate
+                WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, "//div/ul/li[" + str(eval('3 + ' + str(cycleCounter))) + "]/div/span[2]"))
+                        ).click()
+                WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, "//li[" + str(eval('3 + ' + str(cycleCounter))) + reviewDic[reviewData[i][1]]))
+                        ).click()
+                time.sleep(2)
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_ddContactName_Input']"))
+                        ).click()
+                try:
+                    time.sleep(2.5)
+                    driver.find_element(By.XPATH, "//li[contains(.,'" + reviewData[i][2].upper() + "')]").click()
+                except NoSuchElementException:
+                    WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//a[@id='ctl08_ddContactName_Arrow']"))
+                        ).click()
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_ddStatus_Input']"))
+                        ).click()
+                time.sleep(1)
+                WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + reviewStatusDic[reviewData[i][4]] + "')]"))
+                        ).click()
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_calSentDate_dateInput']"))
+                        )
+                sentDateField = driver.find_element(By.XPATH, "//input[@id='ctl08_calSentDate_dateInput']")
+                sentDateField.send_keys(Keys.CONTROL + "a")
+                sentDateField.send_keys(Keys.DELETE)
+                sentDateField.send_keys(reviewData[i][0])
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_calDueDate_dateInput']"))
+                        )
+                dueDateField = driver.find_element(By.XPATH, "//input[@id='ctl08_calDueDate_dateInput']")
+                dueDateField.send_keys(Keys.CONTROL + "a")
+                dueDateField.send_keys(Keys.DELETE)
+                dueDateField.send_keys(reviewData[i][3])
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_txtRemarks']"))
+                        )
+                remarks = driver.find_element(By.XPATH, "//input[@id='ctl08_txtRemarks']")
+                remarks.send_keys("transferred from oracle (program)")
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//textarea[@id='ctl08_txtNote']"))
+                        )
+                note = driver.find_element(By.XPATH, "//textarea[@id='ctl08_txtNote']")
+                note.send_keys(reviewData[i][6])
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                        ).click()
+                driver.switch_to.parent_frame()
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)"))
+                        ).click()
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                        )
+                driver.switch_to.frame("FRMPERMIT")
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_rlvReviews_ctrl" + str(editCounter) + "_btnEdit']"))
+                        ).click()
+                editCounter += 1
+                driver.switch_to.parent_frame()
+                innerframe2 = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.NAME, 'rw'))
+                        )
+                driver.switch_to.frame(innerframe2)
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_calReceivedDate_dateInput']"))
+                        )
+                recDate = driver.find_element(By.XPATH, "//input[@id='ctl08_calReceivedDate_dateInput']")
+                recDate.send_keys(Keys.CONTROL + "a")
+                recDate.send_keys(Keys.DELETE)
+                recDate.send_keys(reviewData[i][5])
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                        ).click()
+                time.sleep(5)
+                driver.switch_to.parent_frame()
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                        )
+                driver.switch_to.frame("FRMPERMIT")
 
     # Click edit
     driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
@@ -614,14 +631,15 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
         "Administrative Citation 1": "BLG-ADMINISTRATIVE CITATION-1",
         "Northgate District 94-1 Impact - Single Family": "DEV IMPACT-NORTHGATE IMPROVEMENT DISTRICT",
         "Northgate District 94-1 Impact - Business Office": "DEV IMPACT-NORTHGATE IMPROVEMENT DISTRICT",
-        "Penalty Fee for Work Done w/o Permit": "BUILDING PERMIT PENALTY"
+        "Penalty Fee for Work Done w/o Permit": "BUILDING PERMIT PENALTY",
+        "Permit Application Fee": "APPLICATION PROCESSING FEE"
     }
 
     with open("Oracle-Automation/Permits/" + permit + " Fees.csv", "r", newline='') as f:
         reader = csv.reader(f)
         tempData = list(reader)
     tempData.pop(0)
-    data = [x for x in tempData if x[3] != "PEND"]
+    data = [x for x in tempData if (x[3] == "PAID" or x[3] == "DUE")]
 
     transferred = [False] * len(data)
     while False in transferred:
@@ -713,6 +731,7 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
         check68 = 0
         check69 = 0
         check70 = 0
+        check71 = 0
         for i in range(0, len(data)):
             if (data[i][3] == "PAID" or data[i][3] == "DUE") and transferred[i] == False:
                 if data[i][0] == "Plan Check Fee" and check1 == 0:
@@ -1147,6 +1166,12 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
                     WebDriverWait(driver, '20').until(
                         EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'BLG-ADMINISTRATIVE CITATION-1 = 267')]"))
                         ).click()
+                elif data[i][0] == "Permit Application Fee" and check71 == 0:
+                    check71 += 1
+                    transferred[i] = True
+                    WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'APPLICATION PROCESSING FEE = 32')]"))
+                        ).click()
         WebDriverWait(driver, '20').until(
                 EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$imgBtnAdd']"))
                 ).click()
@@ -1263,7 +1288,7 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
     for i in range(0, len(data)):
         total += float(data[i][1])
     curSum = driver.find_element(By.XPATH, "//a[@id='ctl12_C_ctl00_lnkBtnFeesDue']").text
-    while float(curSum.replace(",","").replace("$","")) != total:
+    while math.isclose(total, float(curSum.replace(",","").replace("$",""))) == False:
         time.sleep(5)
         curSum = driver.find_element(By.XPATH, "//a[@id='ctl12_C_ctl00_lnkBtnFeesDue']").text
     WebDriverWait(driver, '20').until(
