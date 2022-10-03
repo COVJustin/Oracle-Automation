@@ -7,7 +7,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException
 from datetime import datetime as dt
 import shutil
 import re
@@ -186,7 +186,7 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
                 commentType = commentRevAndType[1]
                 commentText = ""
                 commentTextList = WebDriverWait(driver, '20').until(
-                        EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(" + str(i + 1) + ") p"))
+                        EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(" + str(i + 1) + ") p, .psc-lnp-review-panel:nth-child(" + str(i + 1) + ") li"))
                         )
                 for x in commentTextList:
                     commentText += x.text
@@ -215,12 +215,15 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
                         ).text
                 date1 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', header)[0]
                 for j in range(len(rowCount)):
-                    revtype = WebDriverWait(driver, '20').until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
-                        ).text
                     reviewer = WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
                         ).text
+                    if reviewer == "Solano Environmental Health":
+                        revtype = "Solano Co-Environmental Health"
+                    else:
+                        revtype = WebDriverWait(driver, '20').until(
+                            EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
+                            ).text
                     date2 = WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
                         ).text
@@ -338,7 +341,9 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
         "Public Works-Flood Zone": "]/ul/li[19]/div/span[3]",
         "Public Works-Current Dev": "]/ul/li[16]/div/span[3]",
         "Public Works-Waste Mgmt": "]/ul/li[21]/div/span[3]",
-        "Public Works-Traffic": "]/ul/li[20]/div/span[3]"
+        "Public Works-Traffic": "]/ul/li[20]/div/span[3]",
+        "Public Works": "]/ul/li[16]/div/span[3]",
+        "Solano Co-Environmental Health": "]/ul/li[24]/div/span[3]"
     }
     reviewStatusDic = {
         "Approved": "APPROVED",
@@ -357,9 +362,16 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
         dateTrack = dt.strptime("1/1/01", "%m/%d/%y")
         for i in range(0, len(reviewData)):
             if reviewData[i][1] in reviewDic:
-                WebDriverWait(driver, '20').until(
-                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
-                        ).click()
+                try:
+                    WebDriverWait(driver, '20').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
+                            ).click()
+                except ElementClickInterceptedException:
+                    driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+                    time.sleep(2)
+                    WebDriverWait(driver, '20').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
+                            ).click()
                 driver.switch_to.parent_frame()
                 innerframe = WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.NAME, 'rw'))
@@ -465,6 +477,7 @@ def login(url, url2, driver, permit, downloadFileLocation, permitFileLocation, o
     WebDriverWait(driver, '20').until(
             EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
             ).click()
+    time.sleep(1)
     WebDriverWait(driver, '20').until(
             EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
             ).click()
