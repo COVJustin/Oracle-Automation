@@ -131,12 +131,15 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                 "Approved": "APPROVED",
                 "Expired": "EXPIRED",
                 "Permit issued": "ISSUED",
+                "Completed": "FINALED",
                 "Inspection": "ISSUED",
                 "Plan review": "PLAN CHECK",
                 "Submitted": "APPLIED",
                 "Void": "VOID",
                 "Denied": "DENIED",
                 "Withdrawn": "WITHDRAWN",
+                "Revision Under Review": "REVISION UNDER REVIE",
+                "About to expire": "ABOUT TO EXPIRE"
             }
 
             status = statusDic[oracleStatus]
