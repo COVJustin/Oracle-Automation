@@ -146,7 +146,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
             if oracleStatus in statusDic:
                 status = statusDic[oracleStatus]
             else:
-                error.write(permit + " Unknown Status" + "\n")
+                error.write(permit + " Status Not Found: " + oracleStatus + "\n")
                 status = "PLACEHOLDER"
             desc = oracleDesc + " " + permit
             applyDate = oracleApplyDate
@@ -325,7 +325,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                             time.sleep(5)
                         inspecData[i][20] = comments
                     else:
-                        error.write(permit + " inspection type not found: " + inspecData[i][1] + "\n")
+                        error.write(permit + " Inspection Type Not Found: " + inspecData[i][1] + "\n")
                 inspecdf = pd.DataFrame(columns=["Inspection","Inspection Type","Status","Required","Permit","Permit Type","Permit Description","Address","Address Line 2","City","Preferred Date","Preferred Time","Ready By","Preferred Inspector","Inspector","Scheduled","Completed","Result","Reinspected By","Reinspection Of","Comments"])
                 for i in range(len(inspecData)):
                     inspecdf2 = pd.DataFrame([inspecData[i]],columns=["Inspection","Inspection Type","Status","Required","Permit","Permit Type","Permit Description","Address","Address Line 2","City","Preferred Date","Preferred Time","Ready By","Preferred Inspector","Inspector","Scheduled","Completed","Result","Reinspected By","Reinspection Of", "Comments"])
@@ -453,7 +453,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                                 if revtype in reviewDic:
                                     reviewType = reviewDic[revtype]
                                 else:
-                                    error.write(permit + " Unknown Review Type" + "\n")
+                                    error.write(permit + " Review Type Not Found: " + revtype + "\n")
                                     reviewType = "PLACEHOLDER"
                             date2 = WebDriverWait(driver, '45').until(
                                 EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
@@ -627,11 +627,13 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                     else:
                         data[i][0] = feeDic[data[i][0]]
                 else:
-                    error.write(permit + " fee not found: " + data[i][0] + "\n")
-            feedf = pd.DataFrame(columns=["Fee Description","Amount","Currency","Status","Department","Assessed Date","Payment Date","Invoice"])
-            for i in range(len(data)):
-                feedf2 = pd.DataFrame([data[i]],columns=["Fee Description","Amount","Currency","Status","Department","Assessed Date","Payment Date","Invoice"])
-                feedf = feedf.append(feedf2,ignore_index=True)
+                    error.write(permit + " Fee Not Found: " + data[i][0] + "\n")
+            verifyDict = {}
+            try:
+                verifyDict = [{ "Fee Description":a[0], "Amount":a[1], "Currency":a[2], "Status": a[3], "Department":a[4], "Assessed Date":a[5], "Payment Date":a[6], "Invoice":a[7]} for a in data]
+            except:
+                verifyDict = [{ "Fee Description":a[0], "Amount":a[1], "Currency":a[2], "Status": a[3], "Department":a[4], "Assessed Date":a[5], "Payment Date":a[6], "Invoice":""} for a in data]
+            feedf = pd.DataFrame(verifyDict)
             feedf.to_csv(permitFileLocation + "/" + permit + " Fees.csv", index=False, header=True)
             with zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip", 'w') as zipPerm:
                 zipPerm.write(permitFileLocation + "/" + permit + " Information.csv", arcname=permit + " Information.csv")
