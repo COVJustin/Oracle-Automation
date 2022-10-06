@@ -96,7 +96,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
     login(url, driver, oracle_user, oracle_pass)
     reset = 0
     for z in range(len(permitList)):
-        if reset == 1:
+        if reset == 20:
             driver.close()
             driver = driver_setup()
             login(url, driver, oracle_user, oracle_pass)
