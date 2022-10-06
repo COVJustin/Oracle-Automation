@@ -97,8 +97,11 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
             oracleDesc = WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//div[@id='overviewDescription']/div/div/div/div[2]/span"))
                     ).text
+            centralDesc = ""
             if len(oracleDesc) > 46:
                 centralDesc = oracleDesc[:46]
+            else:
+                centralDesc = oracleDesc
             oracleApplyDate = WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//div[@id='overviewApplicationInformation']/div/div/div/div[6]/div"))
                     ).text
