@@ -142,7 +142,11 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                 "About to expire": "ABOUT TO EXPIRE"
             }
 
-            status = statusDic[oracleStatus]
+            if status in statusDic:
+                status = statusDic[oracleStatus]
+            else:
+                error.write(permit + " Unknown Status" + "\n")
+                status = "PLACEHOLDER"
             desc = oracleDesc + " " + permit
             applyDate = oracleApplyDate
             expDate = oracleExpDate
@@ -363,7 +367,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                 cycleTracker = cycleCount
                 commentDic = {}
                 WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, "//a[@id='prViewPlanCommentsLinkLeft']/span"))
+                        EC.presence_of_element_located((By.XPATH, "//a[@id='prViewPlanCommentsLinkLeft' or @id='prViewPlanCommentsLinkRight']/span"))
                         ).click()
                 try:
                     time.sleep(5)
@@ -423,9 +427,13 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                                 reviewer = "Solano Environmental Health"
                                 revtype = "Solano Co-Environmental Health"
                             else:
-                                revtype = WebDriverWait(driver, '45').until(
-                                    EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
-                                    ).text
+                                if revtype in reviewDic:
+                                    revtype = WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
+                                        ).text
+                                else:
+                                    error.write(permit + " Unknown Review Type" + "\n")
+                                    revtype = "PLACEHOLDER"
                             date2 = WebDriverWait(driver, '45').until(
                                 EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
                                 ).text
