@@ -3,7 +3,7 @@ import threading
 import scrapper
 
 def long_operation_thread(p, d, pf, ou, op, window):
-    scrapper.login('https://emwp.fa.us2.oraclecloud.com/fscmUI/publicSector.html', scrapper.driver_setup(), p, d, pf, ou, op)
+    scrapper.scrapper('https://emwp.fa.us2.oraclecloud.com/fscmUI/publicSector.html', scrapper.driver_setup(), p, d, pf, ou, op)
     window.write_event_value('-THREAD-', 'All Permits Have Been Scrapped !')
 
 sg.theme("BlueMono")

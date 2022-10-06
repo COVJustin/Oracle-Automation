@@ -28,11 +28,7 @@ def driver_setup():
     return driver
 
 # function to log into Central Square & Oracle and search permits
-def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, oracle_user, oracle_pass):
-    with open(permitFile, "r", newline='', encoding='utf8') as extractedPermits:
-        csvreader = csv.reader(extractedPermits)
-        permitList = list(csvreader)
-    permitList.pop(0)
+def login(url, driver, oracle_user, oracle_pass):
     print("logging in to Oracle....")
     driver.get(url)
     driver.maximize_window()
@@ -90,9 +86,21 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
             oracleLogin.send_keys(oracle_user)
             oraclePassword.send_keys(oracle_pass)
             oracleButton.click()
-    
     print("successfully logged in")
+
+def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, oracle_user, oracle_pass):
+    with open(permitFile, "r", newline='', encoding='utf8') as extractedPermits:
+        csvreader = csv.reader(extractedPermits)
+        permitList = list(csvreader)
+    permitList.pop(0)
+    login(url, driver, oracle_user, oracle_pass)
+    reset = 0
     for z in range(len(permitList)):
+        if reset == 1:
+            driver.close()
+            driver = driver_setup()
+            login(url, driver, oracle_user, oracle_pass)
+            reset = 0
         permit = permitList[z][0]
         error = open(permitFileLocation + "/Error Catcher.txt", "a")
         try:
@@ -235,6 +243,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                     ).click()
             time.sleep(5)
             try:
+                time.sleep(1)
                 driver.find_element(By.XPATH, "//button[@id='ojAlertDialogOKBtn-5' or @id='ojAlertDialogOKBtn-2' or @id='ojAlertDialogOKBtn-0']/div/span").click()
                 time.sleep(2)
                 skipInspec = True
@@ -321,9 +330,12 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                         inspecData[i][14] = inspecData[i][14].upper()
                         inspecData[i][17] = inspecData[i][17].upper()
                         if inspecData[i][17] != "APPROVED" and inspecData[i][17] != "":
-                            WebDriverWait(driver, '45').until(
+                            threedots = WebDriverWait(driver, '45').until(
                                     EC.presence_of_element_located((By.CSS_SELECTOR, "#inspectionListRelatedAction" + str(i) + "_menubutton-container .psc-sui-icon-placeholder"))
-                                    ).click()
+                                    )
+                            driver.execute_script("arguments[0].scrollIntoView();", threedots)
+                            time.sleep(1)
+                            threedots.click()
                             time.sleep(1)
                             WebDriverWait(driver, '45').until(
                                     EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'View Detail')]"))
@@ -686,4 +698,5 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
         except (ElementClickInterceptedException, TimeoutException, NoSuchElementException) as errorType:
             error.write(permit + " " + str(errorType) + "\n")
         error.close()
+        reset += 1
     print('program finished')
