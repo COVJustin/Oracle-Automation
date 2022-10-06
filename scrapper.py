@@ -138,11 +138,12 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                 "Void": "VOID",
                 "Denied": "DENIED",
                 "Withdrawn": "WITHDRAWN",
+                "Closed permit": "VOID",
                 "Revision Under Review": "REVISION UNDER REVIE",
-                "About to expire": "ABOUT TO EXPIRE"
+                "About to expire": "EXPIRED"
             }
 
-            if status in statusDic:
+            if oracleStatus in statusDic:
                 status = statusDic[oracleStatus]
             else:
                 error.write(permit + " Unknown Status" + "\n")
@@ -164,13 +165,17 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
             #        EC.presence_of_element_located((By.XPATH, "//input[@id='ccas20_genJobCost']"))
             #        ).text
             #print(oracleVal)
-            resvcom = WebDriverWait(driver, '30').until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "#cf-fields111 .oj-switch-track, #cf-fields268 .oj-switch-track, #cf-fields237 .oj-switch-track"))
-                    ).get_attribute('checked')
-            oracleType = "RESIDENTIAL"
-            if resvcom:
-                oracleType = "COMMERCIAL"
-            
+            WebDriverWait(driver, '30').until(
+                    EC.presence_of_element_located((By.XPATH, "//h1[contains(.,'Application Details')]"))
+                    )
+            time.sleep(1)
+            try:
+                resvcom = driver.find_element(By.CSS_SELECTOR, "#cf-fields111 .oj-switch-track, #cf-fields268 .oj-switch-track, #cf-fields237 .oj-switch-track").get_attribute('checked')
+                oracleType = "RESIDENTIAL"
+                if resvcom:
+                    oracleType = "COMMERCIAL"
+            except NoSuchElementException:
+                oracleType = "COMMERCIAL"       
             infodf = pd.DataFrame([[status, applicant, desc, oracleType, applyDate, expDate, issueDate, primCon, phone, email]],columns=["Status", "Applicant", "Description", "Residential/Commercial", "Applied", "Expired", "Issued", "Primary Contact", "Primary Contact Phone", "Primary Contact Email"])  
             infodf.to_csv(permitFileLocation + "/" + permit + " Information.csv", index=False, header=True)
 
@@ -287,11 +292,12 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                             WebDriverWait(driver, '45').until(
                                     EC.presence_of_element_located((By.CSS_SELECTOR, "#inspectionListRelatedAction" + str(i) + "_menubutton-container .psc-sui-icon-placeholder"))
                                     ).click()
+                            time.sleep(1)
                             WebDriverWait(driver, '45').until(
                                     EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'View Detail')]"))
                                     ).click()
                             try:
-                                time.sleep(1)
+                                time.sleep(2)
                                 driver.find_element(By.XPATH, "//button[@id='ojMessageDialogOKBtn']/div/span").click()
                             except (ElementNotInteractableException, NoSuchElementException):
                                 print("proceed with no pop up")
@@ -316,7 +322,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                             WebDriverWait(driver, '45').until(
                                     EC.presence_of_element_located((By.CSS_SELECTOR, "#ice_inspection_list-Download-DownloadButton .psc-sui-icon-placeholder"))
                                     )
-                            time.sleep(3)
+                            time.sleep(5)
                         inspecData[i][20] = comments
                     else:
                         error.write(permit + " inspection type not found: " + inspecData[i][1] + "\n")
@@ -346,7 +352,8 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                 "Revision Required": "PLAN REVIEW CORRECTIONS",
                 "Not Required": "REVIEW NOT REQUIRED",
                 "Rejected": "DENIED",
-                "Canceled": "WITHDRAWN"
+                "Canceled": "WITHDRAWN",
+                "": ""
             }
             skipRev = False
             time.sleep(1)
@@ -357,18 +364,29 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                     EC.element_to_be_clickable((By.XPATH, "//li[6]/ul/li[2]/a/span"))
                     ).click()
             WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//input[@id='addPlanReview']"))
+                    EC.presence_of_element_located((By.XPATH, "//h2[contains(.,'Plan Reviews')]"))
                     )
-            time.sleep(5)
+            time.sleep(7.5)
             try:
+                driver.find_element(By.XPATH, "//span[contains(.,'No plan review cycles exist')]")
+                skipRev = True
+                print("no reviews")
+            except NoSuchElementException:
                 cycleCount = driver.find_element(By.XPATH, "//label[@id='HeaderPlanReviewCycleHeaderLabel|label']").text
                 reviewdf = pd.DataFrame(columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
                 cycleCount = int(cycleCount[-1])
                 cycleTracker = cycleCount
                 commentDic = {}
-                WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, "//a[@id='prViewPlanCommentsLinkLeft' or @id='prViewPlanCommentsLinkRight']/span"))
-                        ).click()
+                leftPlan = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//a[@id='prViewPlanCommentsLinkLeft']"))
+                        )
+                rightPlan = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//a[@id='prViewPlanCommentsLinkRight']"))
+                        )
+                if leftPlan.get_attribute('style') == "display: none;":
+                    driver.find_element(By.XPATH, "//a[@id='prViewPlanCommentsLinkRight']/span").click()
+                else:
+                    driver.find_element(By.XPATH, "//a[@id='prViewPlanCommentsLinkLeft']/span").click()
                 try:
                     time.sleep(5)
                     driver.find_element(By.CSS_SELECTOR, ".psc-lnp-review-panel:nth-child(1) .oj-flex-item .oj-flex-item:nth-child(1)")
@@ -423,17 +441,20 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                                 EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
                                 ).text
                             time.sleep(1)
+                            reviewType = ""
                             if reviewer == "Solano County Environmental Health":
                                 reviewer = "Solano Environmental Health"
                                 revtype = "Solano Co-Environmental Health"
+                                reviewType = reviewDic[revtype]
                             else:
-                                if revtype in reviewDic:
-                                    revtype = WebDriverWait(driver, '45').until(
+                                revtype = WebDriverWait(driver, '45').until(
                                         EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
                                         ).text
+                                if revtype in reviewDic:
+                                    reviewType = reviewDic[revtype]
                                 else:
                                     error.write(permit + " Unknown Review Type" + "\n")
-                                    revtype = "PLACEHOLDER"
+                                    reviewType = "PLACEHOLDER"
                             date2 = WebDriverWait(driver, '45').until(
                                 EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
                                 ).text
@@ -443,12 +464,15 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                             date3temp = WebDriverWait(driver, '45').until(
                                 EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionDttmUserTable_" + str(j) + "']"))
                                 ).text
-                            date3 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)[0]
+                            date3List = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)
+                            date3 = ""
+                            if len(date3List) == 1:
+                                date3 = date3List[0]
                             notes = ""
                             tempCheck = str(i + 1) + reviewer + revtype
                             if tempCheck in commentDic:
                                 notes += commentDic[tempCheck]
-                            reviewdf2 = pd.DataFrame([[i + 1, date1, reviewDic[revtype], reviewer.upper(), date2, reviewStatusDic[result], date3, notes]],columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
+                            reviewdf2 = pd.DataFrame([[i + 1, date1, reviewType, reviewer.upper(), date2, reviewStatusDic[result], date3, notes]],columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
                             reviewdf = reviewdf.append(reviewdf2,ignore_index=True)
                         cycleTracker -= 1
                 else:
@@ -463,12 +487,24 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                             ).text
                     date1 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', header)[0]
                     for j in range(len(rowCount)):
-                        revtype = WebDriverWait(driver, '45').until(
-                            EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
-                            ).text
                         reviewer = WebDriverWait(driver, '45').until(
-                            EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
-                            ).text
+                                EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
+                                ).text
+                        time.sleep(1)
+                        reviewType = ""
+                        if reviewer == "Solano County Environmental Health":
+                            reviewer = "Solano Environmental Health"
+                            revtype = "Solano Co-Environmental Health"
+                            reviewType = reviewDic[revtype]
+                        else:
+                            revtype = WebDriverWait(driver, '45').until(
+                                    EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
+                                    ).text
+                            if revtype in reviewDic:
+                                reviewType = reviewDic[revtype]
+                            else:
+                                error.write(permit + " Unknown Review Type" + "\n")
+                                reviewType = "PLACEHOLDER"
                         date2 = WebDriverWait(driver, '45').until(
                             EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
                             ).text
@@ -476,19 +512,20 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                             EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionStatusUserTable3_" + str(j) + "']"))
                             ).text
                         date3temp = WebDriverWait(driver, '45').until(
-                            EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionDttmUserTable_" + str(j) + "']"))
-                            ).text
-                        date3 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)[0]
+                                EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionDttmUserTable_" + str(j) + "']"))
+                                ).text
+                        date3List = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)
+                        if len(date3List) == 1:
+                            date3 = date3List[0]
+                        else:
+                            date3 = ""
                         notes = ""
                         tempCheck = str(1) + reviewer + revtype
                         if tempCheck in commentDic:
                             notes += commentDic[tempCheck] + " "
-                        reviewdf2 = pd.DataFrame([[1, date1, reviewDic[revtype], reviewer.upper(), date2, reviewStatusDic[result], date3, notes]],columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
+                        reviewdf2 = pd.DataFrame([[1, date1, reviewType, reviewer.upper(), date2, reviewStatusDic[result], date3, notes]],columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
                         reviewdf = reviewdf.append(reviewdf2,ignore_index=True)
                 reviewdf.to_csv(permitFileLocation + "/" + permit + " Reviews.csv", index=False, header=True)
-            except NoSuchElementException:
-                skipRev = True
-                print("no reviews")
             
             # Change Fees (Needs Optimization)
             feeDic = {
@@ -611,7 +648,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                 os.remove(permitFileLocation + "/" + permit + " Inspection.csv")
             if os.path.exists(permitFileLocation + "/" + permit + " Reviews.csv"):
                 os.remove(permitFileLocation + "/" + permit + " Reviews.csv")
-        except (ElementClickInterceptedException, TimeoutException) as errorType:
+        except (ElementClickInterceptedException, TimeoutException, NoSuchElementException) as errorType:
             error.write(permit + " " + str(errorType) + "\n")
         error.close()
     print('program finished')
