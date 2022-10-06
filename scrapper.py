@@ -98,7 +98,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                     EC.presence_of_element_located((By.XPATH, "//div[@id='overviewDescription']/div/div/div/div[2]/span"))
                     ).text
             if len(oracleDesc) > 46:
-                oracleDesc = oracleDesc[:46]
+                centralDesc = oracleDesc[:46]
             oracleApplyDate = WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//div[@id='overviewApplicationInformation']/div/div/div/div[6]/div"))
                     ).text
@@ -148,7 +148,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
             else:
                 error.write(permit + " Status Not Found: " + oracleStatus + "\n")
                 status = "PLACEHOLDER"
-            desc = oracleDesc + " " + permit
+            desc = centralDesc + " " + permit
             applyDate = oracleApplyDate
             expDate = oracleExpDate
             issueDate = oracleIssDate
@@ -176,7 +176,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                     oracleType = "COMMERCIAL"
             except NoSuchElementException:
                 oracleType = "COMMERCIAL"       
-            infodf = pd.DataFrame([[status, applicant, desc, oracleType, applyDate, expDate, issueDate, primCon, phone, email]],columns=["Status", "Applicant", "Description", "Residential/Commercial", "Applied", "Expired", "Issued", "Primary Contact", "Primary Contact Phone", "Primary Contact Email"])  
+            infodf = pd.DataFrame([[status, applicant, desc, oracleDesc, oracleType, applyDate, expDate, issueDate, primCon, phone, email]],columns=["Status", "Applicant", "Central Square Description", "Oracle Description", "Residential/Commercial", "Applied", "Expired", "Issued", "Primary Contact", "Primary Contact Phone", "Primary Contact Email"])  
             infodf.to_csv(permitFileLocation + "/" + permit + " Information.csv", index=False, header=True)
 
             # Get Fees
@@ -245,6 +245,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                     "503 Rough Electrical": "503-ROUGH ELECTRICAL",
                     "504 Bonding/Grounding": "504-BONDING/GROUNDING",
                     "505 Electric Restore Service": "505-ELECTRIC RESTORE SERVICE",
+                    "506 Rough Photo/Solar": "506-ROUGH PHOTO/SOLAR",
                     "507 Electric Meter Release": "507-ELECTRIC METER RELEASE",
                     "600 Underfloor Insulation": "600-UNDERFLOOR INSULATION",
                     "601 Framing Insulation": "601-FRAMING INSULATION",
@@ -606,7 +607,8 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                 "Northgate District 94-1 Impact - Single Family": "DEV IMPACT-NORTHGATE IMPROVEMENT DISTRICT = 3398",
                 "Northgate District 94-1 Impact - Business Office": "DEV IMPACT-NORTHGATE IMPROVEMENT DISTRICT = 3398",
                 "Penalty Fee for Work Done w/o Permit": "BUILDING PERMIT PENALTY = 2 X ORIG PMT",
-                "Permit Application Fee": "APPLICATION PROCESSING FEE = 32"
+                "Permit Application Fee": "APPLICATION PROCESSING FEE = 32",
+                "Building inspection Hourly": "BLG-INSPECTION HOURLY-ADDITIONAL = QTY*178"
             }
             if oracleType == "COMMERCIAL":
                 feeDic["State SMIP Fee"] = "STATE-SMIP COMMERCIAL = (MAX((JOBVALUE*.00028), .5))"
