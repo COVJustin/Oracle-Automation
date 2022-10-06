@@ -280,6 +280,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     "412 Window Replacement": "412-WINDOW REPLACEMENT",
                     "413 Firewall Penetration": "413-FIREWALL PENETRATION",
                     "414 Structural Other": "414-STRUCTURAL. OTHER",
+                    "500 Temp Power Pole": "500-TEMP. POWER POLE",
                     "501 Conduit/Underground": "501-CONDUIT/UNDERGROUND",
                     "502 Service Entrance": "502-SERVICE ENTRANCE",
                     "503 Rough Electrical": "503-ROUGH ELECTRICAL",
@@ -316,6 +317,8 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     "953 Mechanical Final": "953-MECHANICAL FINAL**",
                     "954 Grading Final": "954-GRADING FINAL**",
                     "955 Demolition Final": "955-DEMOLITION FINAL**",
+                    "Encroachment/Excavation Final": "ENCROACHMENT FINAL",
+                    "Encroachment Driveway Approach": "DRIVEWAY APPROACH"
                 }
                 with open(permitFileLocation + "/" + permit + " Inspection.csv", "r", newline='', encoding='utf8') as inspecfile:
                     inspecreader = csv.reader(inspecfile)
@@ -416,7 +419,9 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 skipRev = True
                 print("no reviews")
             except NoSuchElementException:
-                cycleCount = driver.find_element(By.XPATH, "//label[@id='HeaderPlanReviewCycleHeaderLabel|label']").text
+                cycleCount = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//label[@id='HeaderPlanReviewCycleHeaderLabel|label']"))
+                    ).text
                 reviewdf = pd.DataFrame(columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
                 cycleCount = int(cycleCount[-1])
                 cycleTracker = cycleCount
@@ -668,7 +673,6 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                         data.insert(i + 1, ["C2 PERMIT COORDINATION FEE = 2", 2.0, data[i][2], data[i][3], data[i][4], data[i][5], data[i][6]])
                         data.insert(i + 1, ["C3 PERMIT COORDINATION FEE = 1", 1.0, data[i][2], data[i][3], data[i][4], data[i][5], data[i][6]])
                         data[i][0] = feeDic[data[i][0]]
-                        i += 2
                     else:
                         data[i][0] = feeDic[data[i][0]]
                 else:
