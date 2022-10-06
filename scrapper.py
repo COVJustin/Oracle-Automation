@@ -48,21 +48,49 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
     WebDriverWait(driver, '45').until(
             EC.presence_of_element_located((By.XPATH, "//a[contains(text(),'Sign In')]"))
             ).click()
-
-    oracleLogin = WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.XPATH, "//input[@id='idcs-signin-basic-signin-form-username']"))
-            )
-    
-    oraclePassword = WebDriverWait(driver, '45').until(
+    time.sleep(7.5)
+    try:
+        oracleLogin = driver.find_element(By.XPATH, "//input[@id='idcs-signin-basic-signin-form-username']")
+        oraclePassword = WebDriverWait(driver, '45').until(
             EC.presence_of_element_located((By.XPATH, "//input[@id='idcs-signin-basic-signin-form-password|input']"))
             )
 
-    oracleButton = WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.XPATH, "//oj-button[@id='idcs-signin-basic-signin-form-submit']/button/div"))
-            )
-    oracleLogin.send_keys(oracle_user)
-    oraclePassword.send_keys(oracle_pass)
-    oracleButton.click()
+        oracleButton = WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//oj-button[@id='idcs-signin-basic-signin-form-submit']/button/div"))
+                )
+        oracleLogin.send_keys(oracle_user)
+        oraclePassword.send_keys(oracle_pass)
+        oracleButton.click()
+    except NoSuchElementException:
+        driver.refresh()
+        time.sleep(2)
+        try:
+            oracleLogin = driver.find_element(By.XPATH, "//input[@id='idcs-signin-basic-signin-form-username']")
+            oraclePassword = WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='idcs-signin-basic-signin-form-password|input']"))
+                )
+
+            oracleButton = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//oj-button[@id='idcs-signin-basic-signin-form-submit']/button/div"))
+                    )
+            oracleLogin.send_keys(oracle_user)
+            oraclePassword.send_keys(oracle_pass)
+            oracleButton.click()
+        except NoSuchElementException:
+            driver.refresh()
+            time.sleep(2)
+            oracleLogin = driver.find_element(By.XPATH, "//input[@id='idcs-signin-basic-signin-form-username']")
+            oraclePassword = WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='idcs-signin-basic-signin-form-password|input']"))
+                )
+
+            oracleButton = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//oj-button[@id='idcs-signin-basic-signin-form-submit']/button/div"))
+                    )
+            oracleLogin.send_keys(oracle_user)
+            oraclePassword.send_keys(oracle_pass)
+            oracleButton.click()
+    
     print("successfully logged in")
     for z in range(len(permitList)):
         permit = permitList[z][0]
@@ -611,7 +639,7 @@ def login(url, driver, permitFile, downloadFileLocation, permitFileLocation, ora
                 "Northgate District 94-1 Impact - Business Office": "DEV IMPACT-NORTHGATE IMPROVEMENT DISTRICT = 3398",
                 "Penalty Fee for Work Done w/o Permit": "BUILDING PERMIT PENALTY = 2 X ORIG PMT",
                 "Permit Application Fee": "APPLICATION PROCESSING FEE = 32",
-                "Building inspection Hourly": "BLG-INSPECTION HOURLY-ADDITIONAL = QTY*178"
+                "Building Inspection Hourly": "BLG-INSPECTION HOURLY-ADDITIONAL = QTY*178"
             }
             if oracleType == "COMMERCIAL":
                 feeDic["State SMIP Fee"] = "STATE-SMIP COMMERCIAL = (MAX((JOBVALUE*.00028), .5))"
