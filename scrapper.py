@@ -247,7 +247,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
             time.sleep(5)
             try:
                 time.sleep(1)
-                driver.find_element(By.XPATH, "//button[@id='ojAlertDialogOKBtn-5' or @id='ojAlertDialogOKBtn-2' or @id='ojAlertDialogOKBtn-0']/div/span").click()
+                driver.find_element(By.XPATH, "//button[@id='ojAlertDialogOKBtn-8' or @id='ojAlertDialogOKBtn-5' or @id='ojAlertDialogOKBtn-2' or @id='ojAlertDialogOKBtn-0']/div/span").click()
                 time.sleep(2)
                 skipInspec = True
             except (ElementNotInteractableException, NoSuchElementException):
