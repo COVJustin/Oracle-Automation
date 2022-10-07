@@ -104,7 +104,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
             login(url, driver, oracle_user, oracle_pass)
             reset = 0
         permit = permitList[z][0]
-        error = open(permitFileLocation + "/Error Catcher.txt", "a")
+        error = open(permitFileLocation + "/00 Error Catcher.txt", "a")
         try:
             oracle_search = WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//input[@id='srchListC_input|input']"))
@@ -247,7 +247,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
             time.sleep(5)
             try:
                 time.sleep(1)
-                driver.find_element(By.XPATH, "//button[@id='ojAlertDialogOKBtn-8' or @id='ojAlertDialogOKBtn-5' or @id='ojAlertDialogOKBtn-2' or @id='ojAlertDialogOKBtn-0']/div/span").click()
+                driver.find_element(By.XPATH, "//span[contains(.,'OK')]").click()
                 time.sleep(2)
                 skipInspec = True
             except (ElementNotInteractableException, NoSuchElementException):
