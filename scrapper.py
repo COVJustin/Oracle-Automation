@@ -122,6 +122,10 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
             time.sleep(1)
             WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//a[contains(text(), '" + permit + "')]"))
+                    )
+            time.sleep(1)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), '" + permit + "')]"))
                     ).click()
             WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//span[contains(.,'Print Permit')]"))
