@@ -30,6 +30,8 @@ def driver_setup():
 # function to log into Central Square & Oracle and search permits
 def login(url, driver, oracle_user, oracle_pass):
     print("logging in to Oracle....")
+    driver.get('chrome://settings/')
+    driver.execute_script('chrome.settingsPrivate.setDefaultZoom(0.75);')
     driver.get(url)
     driver.maximize_window()
     
@@ -96,7 +98,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
     login(url, driver, oracle_user, oracle_pass)
     reset = 0
     for z in range(len(permitList)):
-        if reset == 20:
+        if reset == 15:
             driver.close()
             driver = driver_setup()
             login(url, driver, oracle_user, oracle_pass)
