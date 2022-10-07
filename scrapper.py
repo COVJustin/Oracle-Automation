@@ -188,7 +188,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 status = statusDic[oracleStatus]
             else:
                 error.write(permit + " Status Not Found: " + oracleStatus + "\n")
-                status = "PLACEHOLDER"
+                status = oracleStatus.upper()
             desc = centralDesc + " " + permit
             applyDate = oracleApplyDate
             expDate = oracleExpDate
@@ -408,7 +408,8 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 "Public Works-Waste Mgmt": "PW-WASTE MGMT. PLAN",
                 "Public Works-Traffic": "PW-TRAFFIC ENGINEER",
                 "Public Works": "PW-CURRENT DEVELOPMENT",
-                "Solano Co-Environmental Health": "SOLANO CO-ENVIRONMENTAL HEALTH"
+                "Solano Co-Environmental Health": "SOLANO CO-ENVIRONMENTAL HEALTH",
+                "Economic Development": "ED-LEASE REVIEW"
             }
             
             reviewStatusDic = {
@@ -520,7 +521,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                                     reviewType = reviewDic[revtype]
                                 else:
                                     error.write(permit + " Review Type Not Found: " + revtype + "\n")
-                                    reviewType = "PLACEHOLDER"
+                                    reviewType = revtype
                             date2 = WebDriverWait(driver, '45').until(
                                 EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
                                 ).text
