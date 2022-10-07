@@ -232,6 +232,10 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     ).click()
             WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
+                    )
+            time.sleep(1)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
                     ).click()
             time.sleep(5)
             shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
@@ -243,6 +247,10 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     ).click()
             WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, "#ice_inspection_list-Download-DownloadButton .psc-sui-icon-placeholder"))
+                    )
+            time.sleep(1)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "#ice_inspection_list-Download-DownloadButton .psc-sui-icon-placeholder"))
                     ).click()
             time.sleep(5)
             try:
