@@ -214,6 +214,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 if resvcom:
                     oracleType = "COMMERCIAL"
             except NoSuchElementException:
+                error.write(permit + " Res v Com Defaulted to Commercial\n")
                 oracleType = "COMMERCIAL"       
             infodf = pd.DataFrame([[status, applicant, desc, oracleDesc, oracleType, applyDate, expDate, issueDate, primCon, phone, email]],columns=["Status", "Applicant", "Central Square Description", "Oracle Description", "Residential/Commercial", "Applied", "Expired", "Issued", "Primary Contact", "Primary Contact Phone", "Primary Contact Email"])  
             infodf.to_csv(permitFileLocation + "/" + permit + " Information.csv", index=False, header=True)
@@ -336,8 +337,11 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                             threedots = WebDriverWait(driver, '45').until(
                                     EC.presence_of_element_located((By.CSS_SELECTOR, "#inspectionListRelatedAction" + str(i) + "_menubutton-container .psc-sui-icon-placeholder"))
                                     )
-                            driver.execute_script("arguments[0].scrollIntoView();", threedots)
+                            driver.execute_script("arguments[0].scrollIntoView(true);", threedots)
                             time.sleep(1)
+                            WebDriverWait(driver, '45').until(
+                                    EC.presence_of_element_located((By.XPATH, "//*[@id='RelatedActionField_" + str(i) +"']"))
+                                    ).click()
                             threedots.click()
                             time.sleep(1)
                             WebDriverWait(driver, '45').until(
@@ -665,18 +669,20 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 tempData = list(reader)
             tempData.pop(0)
             data = [x for x in tempData if (x[3] == "PAID" or x[3] == "DUE" or x[3] == "REFUND")]
-
+            incrementFee = 0
             for i in range(len(data)):
-                if data[i][0] in feeDic:
-                    if data[i][0] == "C1, C2, C3 Permit Coordination Fees":
-                        data[i][1] = float(data[i][1]) - 3.0
-                        data.insert(i + 1, ["C2 PERMIT COORDINATION FEE = 2", 2.0, data[i][2], data[i][3], data[i][4], data[i][5], data[i][6]])
-                        data.insert(i + 1, ["C3 PERMIT COORDINATION FEE = 1", 1.0, data[i][2], data[i][3], data[i][4], data[i][5], data[i][6]])
-                        data[i][0] = feeDic[data[i][0]]
+                if data[incrementFee][0] in feeDic:
+                    if data[incrementFee][0] == "C1, C2, C3 Permit Coordination Fees":
+                        data[incrementFee][1] = float(data[incrementFee][1]) - 3.0
+                        data.insert(incrementFee + 1, ["C2 PERMIT COORDINATION FEE = 2", 2.0, data[incrementFee][2], data[incrementFee][3], data[incrementFee][4], data[incrementFee][5], data[incrementFee][6]])
+                        data.insert(incrementFee + 1, ["C3 PERMIT COORDINATION FEE = 1", 1.0, data[incrementFee][2], data[incrementFee][3], data[incrementFee][4], data[incrementFee][5], data[incrementFee][6]])
+                        data[incrementFee][0] = feeDic[data[incrementFee][0]]
+                        incrementFee += 2
                     else:
-                        data[i][0] = feeDic[data[i][0]]
+                        data[incrementFee][0] = feeDic[data[incrementFee][0]]
                 else:
-                    error.write(permit + " Fee Not Found: " + data[i][0] + "\n")
+                    error.write(permit + " Fee Not Found: " + data[incrementFee][0] + "\n")
+                incrementFee += 1
             verifyDict = {}
             try:
                 verifyDict = [{ "Fee Description":a[0], "Amount":a[1], "Currency":a[2], "Status": a[3], "Department":a[4], "Assessed Date":a[5], "Payment Date":a[6], "Invoice":a[7]} for a in data]
