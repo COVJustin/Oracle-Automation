@@ -570,8 +570,8 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                             if revtype in reviewDic:
                                 reviewType = reviewDic[revtype]
                             else:
-                                error.write(permit + " Unknown Review Type" + "\n")
-                                reviewType = "PLACEHOLDER"
+                                error.write(permit + " Review Type Not Found: " + revtype + "\n")
+                                reviewType = revtype
                         date2 = WebDriverWait(driver, '45').until(
                             EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
                             ).text
