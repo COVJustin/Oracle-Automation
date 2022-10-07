@@ -299,6 +299,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     "505 Electric Restore Service": "505-ELECTRIC RESTORE SERVICE",
                     "506 Rough Photo/Solar": "506-ROUGH PHOTO/SOLAR",
                     "507 Electric Meter Release": "507-ELECTRIC METER RELEASE",
+                    "510 T-Bar Electrical": "410-STRUCT. MISC/T-BAR",
                     "600 Underfloor Insulation": "600-UNDERFLOOR INSULATION",
                     "601 Framing Insulation": "601-FRAMING INSULATION",
                     "602 Ceiling Insulation": "602-CEILING INSULATION",
@@ -329,6 +330,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     "953 Mechanical Final": "953-MECHANICAL FINAL**",
                     "954 Grading Final": "954-GRADING FINAL**",
                     "955 Demolition Final": "955-DEMOLITION FINAL**",
+                    "956 Final PV Solar": "956-FINAL PV/SOLAR**",
                     "Encroachment/Excavation Final": "ENCROACHMENT FINAL",
                     "Encroachment Driveway Approach": "DRIVEWAY APPROACH"
                 }
@@ -671,7 +673,8 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 "Northgate District 94-1 Impact - Business Office": "DEV IMPACT-NORTHGATE IMPROVEMENT DISTRICT = 3398",
                 "Penalty Fee for Work Done w/o Permit": "BUILDING PERMIT PENALTY = 2 X ORIG PMT",
                 "Permit Application Fee": "APPLICATION PROCESSING FEE = 32",
-                "Building Inspection Hourly": "BLG-INSPECTION HOURLY-ADDITIONAL = QTY*178"
+                "Building Inspection Hourly": "BLG-INSPECTION HOURLY-ADDITIONAL = QTY*178",
+                "Copies": "BLG-COPIES 8.5X11 = QTY*0.15"
             }
             if oracleType == "COMMERCIAL":
                 feeDic["State SMIP Fee"] = "STATE-SMIP COMMERCIAL = (MAX((JOBVALUE*.00028), .5))"
