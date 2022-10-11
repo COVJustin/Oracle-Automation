@@ -99,7 +99,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
     reset = 0
     for z in range(len(permitList)):
         permit = permitList[z][0]
-        if not os.path.exists(permitFileLocation + "/" + permit + ".zip"):
+        if (not os.path.exists(permitFileLocation + "/" + permit + ".zip")) and "PW" not in permit:
             if reset == 15:
                 driver.close()
                 driver = driver_setup()
@@ -305,7 +305,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                         "505 Electric Restore Service": "505-ELECTRIC RESTORE SERVICE",
                         "506 Rough Photo/Solar": "506-ROUGH PHOTO/SOLAR",
                         "507 Electric Meter Release": "507-ELECTRIC METER RELEASE",
-                        "510 T-Bar Electrical": "410-STRUCT. MISC/T-BAR",
+                        "508 Underfloor Electrical": "501-CONDUIT/UNDERGROUND",
                         "600 Underfloor Insulation": "600-UNDERFLOOR INSULATION",
                         "601 Framing Insulation": "601-FRAMING INSULATION",
                         "602 Ceiling Insulation": "602-CEILING INSULATION",
@@ -363,7 +363,9 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                         "Encroachment Lane Closure": "LANE CLOSURE",
                         "Excavation Sewer Project": "EXCAVATION SEWER PROJECT",
                         "Encroachment Asphalt Repaving": "ASPHALT REPAVING",
-                        "Finish Grading": "FINISH GRADING SITE"
+                        "Finish Grading": "201-FINISH GRADING",
+                        "Public Works Inspection": "PUBLIC WORKS-FINAL",
+                        "Encroachment Miscellaneous": "MISCELLANEOUS"
                     }
                     with open(permitFileLocation + "/" + permit + " Inspection.csv", "r", newline='', encoding='utf8') as inspecfile:
                         inspecreader = csv.reader(inspecfile)
