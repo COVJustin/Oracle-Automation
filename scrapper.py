@@ -243,7 +243,11 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                         EC.element_to_be_clickable((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
                         ).click()
                 time.sleep(5)
-                shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
+                try:
+                    shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
+                except FileNotFoundError:
+                    time.sleep(10)
+                    shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
 
                 # Get Inspections
                 skipInspec = False
@@ -264,7 +268,11 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     time.sleep(2)
                     skipInspec = True
                 except (ElementNotInteractableException, NoSuchElementException):
-                    shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
+                    try:
+                        shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
+                    except FileNotFoundError:
+                        time.sleep(10)
+                        shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
                     inspectDict = {
                         "101 Survey/Set Backs": "101-SURVEY/SET BACKS",
                         "102 Ufer/Ground Electrode": "102-UFER/GRND. ELECTRODE",
@@ -365,7 +373,8 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                         "Encroachment Asphalt Repaving": "ASPHALT REPAVING",
                         "Finish Grading": "201-FINISH GRADING",
                         "Public Works Inspection": "PUBLIC WORKS-FINAL",
-                        "Encroachment Miscellaneous": "MISCELLANEOUS"
+                        "Encroachment Miscellaneous": "MISCELLANEOUS",
+                        "Fire Miscellaneous": "FIRE MISC."
                     }
                     with open(permitFileLocation + "/" + permit + " Inspection.csv", "r", newline='', encoding='utf8') as inspecfile:
                         inspecreader = csv.reader(inspecfile)
@@ -755,7 +764,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     os.remove(permitFileLocation + "/" + permit + " Inspection.csv")
                 if os.path.exists(permitFileLocation + "/" + permit + " Reviews.csv"):
                     os.remove(permitFileLocation + "/" + permit + " Reviews.csv")
-            except (ElementClickInterceptedException, TimeoutException, NoSuchElementException) as errorType:
+            except (ElementClickInterceptedException, TimeoutException, NoSuchElementException, ElementNotInteractableException) as errorType:
                 error.write(permit + " " + str(errorType) + "\n")
             error.close()
             reset += 1
