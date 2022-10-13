@@ -544,18 +544,18 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                                 WebDriverWait(driver, '45').until(
                                         EC.presence_of_element_located((By.XPATH, "//tr[" + str(cycleTracker) + "]/td[8]/div/td/button/div/span"))
                                         ).click()
-                            WebDriverWait(driver, '45').until(
-                                        EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
-                                        )
+                            body = WebDriverWait(driver, '45').until(
+                                    EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
+                                    )
+                            WebDriverWait(body, '45').until(
+                                    EC.presence_of_element_located((By.TAG_NAME, "tr"))
+                                    )
                             emptyCycle = WebDriverWait(driver, '45').until(
                                         EC.presence_of_element_located((By.XPATH, "//oj-table[@id='lnp_plan_review_user_multiDataTable']/table/tbody/tr/td"))
                                         ).text
                             if emptyCycle == "No data to display.":
                                 print("No reviews in this cycle")
                             else:
-                                body = WebDriverWait(driver, '45').until(
-                                        EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
-                                        )
                                 rowCount = WebDriverWait(body, '45').until(
                                         EC.presence_of_all_elements_located((By.TAG_NAME, "tr"))
                                         )
@@ -603,18 +603,18 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                                     reviewdf = reviewdf.append(reviewdf2,ignore_index=True)
                             cycleTracker -= 1
                     else:
-                        WebDriverWait(driver, '45').until(
-                                        EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
-                                        )
+                        body = WebDriverWait(driver, '45').until(
+                                    EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
+                                    )
+                        WebDriverWait(body, '45').until(
+                                    EC.presence_of_element_located((By.TAG_NAME, "tr"))
+                                    )
                         emptyCycle = WebDriverWait(driver, '45').until(
                                     EC.presence_of_element_located((By.XPATH, "//oj-table[@id='lnp_plan_review_user_multiDataTable']/table/tbody/tr/td"))
                                     ).text
                         if emptyCycle == "No data to display.":
                             print("No reviews in this cycle")
                         else:
-                            body = WebDriverWait(driver, '45').until(
-                                    EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
-                                    )
                             rowCount = WebDriverWait(body, '45').until(
                                     EC.presence_of_all_elements_located((By.TAG_NAME, "tr"))
                                     )
