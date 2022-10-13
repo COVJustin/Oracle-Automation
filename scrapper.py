@@ -21,9 +21,15 @@ from threading import Thread
 import pyautogui as pg
 
 # Setups Selenium WebDriver
-def driver_setup():
+def driver_setup(downloadFileLocation):
     options = webdriver.ChromeOptions()
-    options.add_experimental_option("detach", True) 
+    options.add_experimental_option("detach", True)
+    d = downloadFileLocation.replace("/","\\")
+    print(d)
+    options.add_experimental_option("prefs", {
+        "download.default_directory": r"{}".format(d),
+        "download.directory_upgrade": True
+    })
     driver = webdriver.Chrome(options = options)
     return driver
 
@@ -102,7 +108,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
         if (not os.path.exists(permitFileLocation + "/" + permit + ".zip")) and "PW" not in permit:
             if reset == 15:
                 driver.close()
-                driver = driver_setup()
+                driver = driver_setup(downloadFileLocation)
                 login(url, driver, oracle_user, oracle_pass)
                 reset = 0
             error = open(permitFileLocation + "/00 Error Catcher.txt", "a")
@@ -246,6 +252,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 if os.path.exists(downloadFileLocation + '/Fees and Payments.csv'):
                     shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
                 else:
+                    print("Reached the second attempt at moving file")
                     time.sleep(15)
                     shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
                     
@@ -272,6 +279,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     if os.path.exists(downloadFileLocation + '/Inspection.csv'):
                         shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
                     else:
+                        print("Reached the second attempt at moving file")
                         time.sleep(15)
                         shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
                     inspectDict = {
@@ -746,7 +754,8 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     "Building Inspection Hourly": "BLG-INSPECTION HOURLY-ADDITIONAL = QTY*178",
                     "Copies": "BLG-COPIES 8.5X11 = QTY*0.15",
                     "Official Certificate of Occupancy Certificate": "BLG-CERTIFICATE OF OCCUPANCY = 43",
-                    "Consultant Plan Review/Insp - Overhead Surcharge": "CONSULTANT REVIEW AND/OR INSPECTION = QTY *1.2"
+                    "Consultant Plan Review/Insp - Overhead Surcharge": "CONSULTANT REVIEW AND/OR INSPECTION = QTY *1.2",
+                    "Transportation Impact - Single Family": "TRANSPORTATION-SINGLE-FAMILY = 8479.91 * QTY"
                 }
                 if oracleType == "COMMERCIAL":
                     feeDic["State SMIP Fee"] = "STATE-SMIP COMMERCIAL = (MAX((JOBVALUE*.00028), .5))"
