@@ -243,11 +243,12 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                         EC.element_to_be_clickable((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
                         ).click()
                 time.sleep(5)
-                try:
+                if os.path.exists(downloadFileLocation + '/Fees and Payments.csv'):
                     shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
-                except FileNotFoundError:
-                    time.sleep(10)
+                else:
+                    time.sleep(15)
                     shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
+                    
 
                 # Get Inspections
                 skipInspec = False
@@ -268,10 +269,10 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                     time.sleep(2)
                     skipInspec = True
                 except (ElementNotInteractableException, NoSuchElementException):
-                    try:
+                    if os.path.exists(downloadFileLocation + '/Inspection.csv'):
                         shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
-                    except FileNotFoundError:
-                        time.sleep(10)
+                    else:
+                        time.sleep(15)
                         shutil.move(downloadFileLocation + '/Inspection.csv', permitFileLocation + "/" + permit + ' Inspection.csv')
                     inspectDict = {
                         "101 Survey/Set Backs": "101-SURVEY/SET BACKS",
@@ -532,9 +533,85 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                             WebDriverWait(driver, '45').until(
                                     EC.presence_of_element_located((By.XPATH, "//a[@id='prChangeCycleLink']/span"))
                                     ).click()
-                            WebDriverWait(driver, '45').until(
-                                    EC.presence_of_element_located((By.XPATH, "//tr[" + str(cycleTracker) + "]/td[8]/div/td/button/div/span"))
+                            if cycleTracker > 8:
+                                WebDriverWait(driver, '45').until(
+                                    EC.presence_of_element_located((By.CSS_SELECTOR, ".oj-enabled > span:nth-child(2)"))
                                     ).click()
+                                WebDriverWait(driver, '45').until(
+                                    EC.presence_of_element_located((By.XPATH, "//tr[" + str(cycleTracker - 8) + "]/td[8]/div/td/button/div/span"))
+                                    ).click()
+                            else:
+                                WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//tr[" + str(cycleTracker) + "]/td[8]/div/td/button/div/span"))
+                                        ).click()
+                            WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
+                                        )
+                            emptyCycle = WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//oj-table[@id='lnp_plan_review_user_multiDataTable']/table/tbody/tr/td"))
+                                        ).text
+                            if emptyCycle == "No data to display.":
+                                print("No reviews in this cycle")
+                            else:
+                                body = WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
+                                        )
+                                rowCount = WebDriverWait(body, '45').until(
+                                        EC.presence_of_all_elements_located((By.TAG_NAME, "tr"))
+                                        )
+                                header = WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//label[@id='HeaderPlanReviewOpenByInfoLff|label']"))
+                                        ).text
+                                date1 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', header)[0]
+                                for j in range(len(rowCount)):
+                                    reviewer = WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
+                                        ).text
+                                    time.sleep(1)
+                                    reviewType = ""
+                                    if reviewer == "Solano County Environmental Health":
+                                        reviewer = "Solano Environmental Health"
+                                        revtype = "Solano Co-Environmental Health"
+                                        reviewType = reviewDic[revtype]
+                                    else:
+                                        revtype = WebDriverWait(driver, '45').until(
+                                                EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
+                                                ).text
+                                        if revtype in reviewDic:
+                                            reviewType = reviewDic[revtype]
+                                        else:
+                                            error.write(permit + " Review Type Not Found: " + revtype + "\n")
+                                            reviewType = revtype
+                                    date2 = WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
+                                        ).text
+                                    result = WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionStatusUserTable3_" + str(j) + "']"))
+                                        ).text
+                                    date3temp = WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionDttmUserTable_" + str(j) + "']"))
+                                        ).text
+                                    date3List = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)
+                                    date3 = ""
+                                    if len(date3List) == 1:
+                                        date3 = date3List[0]
+                                    notes = ""
+                                    tempCheck = str(i + 1) + reviewer + revtype
+                                    if tempCheck in commentDic:
+                                        notes += commentDic[tempCheck]
+                                    reviewdf2 = pd.DataFrame([[i + 1, date1, reviewType, reviewer.upper(), date2, reviewStatusDic[result], date3, notes]],columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
+                                    reviewdf = reviewdf.append(reviewdf2,ignore_index=True)
+                            cycleTracker -= 1
+                    else:
+                        WebDriverWait(driver, '45').until(
+                                        EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
+                                        )
+                        emptyCycle = WebDriverWait(driver, '45').until(
+                                    EC.presence_of_element_located((By.XPATH, "//oj-table[@id='lnp_plan_review_user_multiDataTable']/table/tbody/tr/td"))
+                                    ).text
+                        if emptyCycle == "No data to display.":
+                            print("No reviews in this cycle")
+                        else:
                             body = WebDriverWait(driver, '45').until(
                                     EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
                                     )
@@ -547,8 +624,8 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                             date1 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', header)[0]
                             for j in range(len(rowCount)):
                                 reviewer = WebDriverWait(driver, '45').until(
-                                    EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
-                                    ).text
+                                        EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
+                                        ).text
                                 time.sleep(1)
                                 reviewType = ""
                                 if reviewer == "Solano County Environmental Health":
@@ -571,69 +648,19 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                                     EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionStatusUserTable3_" + str(j) + "']"))
                                     ).text
                                 date3temp = WebDriverWait(driver, '45').until(
-                                    EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionDttmUserTable_" + str(j) + "']"))
-                                    ).text
+                                        EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionDttmUserTable_" + str(j) + "']"))
+                                        ).text
                                 date3List = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)
-                                date3 = ""
                                 if len(date3List) == 1:
                                     date3 = date3List[0]
-                                notes = ""
-                                tempCheck = str(i + 1) + reviewer + revtype
-                                if tempCheck in commentDic:
-                                    notes += commentDic[tempCheck]
-                                reviewdf2 = pd.DataFrame([[i + 1, date1, reviewType, reviewer.upper(), date2, reviewStatusDic[result], date3, notes]],columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
-                                reviewdf = reviewdf.append(reviewdf2,ignore_index=True)
-                            cycleTracker -= 1
-                    else:
-                        body = WebDriverWait(driver, '45').until(
-                                EC.presence_of_element_located((By.XPATH, "//div[3]/div/oj-table/table/tbody"))
-                                )
-                        rowCount = WebDriverWait(body, '45').until(
-                                EC.presence_of_all_elements_located((By.TAG_NAME, "tr"))
-                                )
-                        header = WebDriverWait(driver, '45').until(
-                                EC.presence_of_element_located((By.XPATH, "//label[@id='HeaderPlanReviewOpenByInfoLff|label']"))
-                                ).text
-                        date1 = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', header)[0]
-                        for j in range(len(rowCount)):
-                            reviewer = WebDriverWait(driver, '45').until(
-                                    EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerNameUserTable" + str(j) + "']"))
-                                    ).text
-                            time.sleep(1)
-                            reviewType = ""
-                            if reviewer == "Solano County Environmental Health":
-                                reviewer = "Solano Environmental Health"
-                                revtype = "Solano Co-Environmental Health"
-                                reviewType = reviewDic[revtype]
-                            else:
-                                revtype = WebDriverWait(driver, '45').until(
-                                        EC.presence_of_element_located((By.CSS_SELECTOR, "#prDepartmentUserTable_" + str(j) +" > span"))
-                                        ).text
-                                if revtype in reviewDic:
-                                    reviewType = reviewDic[revtype]
                                 else:
-                                    error.write(permit + " Review Type Not Found: " + revtype + "\n")
-                                    reviewType = revtype
-                            date2 = WebDriverWait(driver, '45').until(
-                                EC.presence_of_element_located((By.XPATH, "//td[@id='prReviewerDueDateUserTable_" + str(j) + "']"))
-                                ).text
-                            result = WebDriverWait(driver, '45').until(
-                                EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionStatusUserTable3_" + str(j) + "']"))
-                                ).text
-                            date3temp = WebDriverWait(driver, '45').until(
-                                    EC.presence_of_element_located((By.XPATH, "//div[@id='prDecisionDttmUserTable_" + str(j) + "']"))
-                                    ).text
-                            date3List = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', date3temp)
-                            if len(date3List) == 1:
-                                date3 = date3List[0]
-                            else:
-                                date3 = ""
-                            notes = ""
-                            tempCheck = str(1) + reviewer + revtype
-                            if tempCheck in commentDic:
-                                notes += commentDic[tempCheck] + " "
-                            reviewdf2 = pd.DataFrame([[1, date1, reviewType, reviewer.upper(), date2, reviewStatusDic[result], date3, notes]],columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
-                            reviewdf = reviewdf.append(reviewdf2,ignore_index=True)
+                                    date3 = ""
+                                notes = ""
+                                tempCheck = str(1) + reviewer + revtype
+                                if tempCheck in commentDic:
+                                    notes += commentDic[tempCheck] + " "
+                                reviewdf2 = pd.DataFrame([[1, date1, reviewType, reviewer.upper(), date2, reviewStatusDic[result], date3, notes]],columns=["Submittal Number", "Date Sent", "Review Type", "Reviewer", "Date Due", "Status", "Date Returned", "Notes"])
+                                reviewdf = reviewdf.append(reviewdf2,ignore_index=True)
                     reviewdf.to_csv(permitFileLocation + "/" + permit + " Reviews.csv", index=False, header=True)
                 
                 # Change Fees (Needs Optimization)
