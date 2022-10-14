@@ -1,5 +1,6 @@
 from gettext import find
 from pickle import FALSE
+from unittest import skip
 from selenium import webdriver
 import chromedriver_binary
 from selenium.webdriver.common.by import By
@@ -244,15 +245,10 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 WebDriverWait(driver, '45').until(
                         EC.presence_of_element_located((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
                         )
-                time.sleep(2.5)
+                time.sleep(3)
                 skipFee = False
                 try:
-                    driver.find_element(By.XPATH, "//span[contains(.,'The fees have been calculated and there are no fees at this time.')]")
-                    skipFee = True
-                except (NoSuchElementException):
-                    WebDriverWait(driver, '30').until(
-                            EC.element_to_be_clickable((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
-                            ).click()
+                    driver.find_element(By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder").click()
                     time.sleep(5)
                     if os.path.exists(downloadFileLocation + '/Fees and Payments.csv'):
                         shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
@@ -260,6 +256,8 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                         print("Reached the second attempt at moving file")
                         time.sleep(15)
                         shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
+                except (ElementNotInteractableException):
+                    skipFee = True
                     
 
                 # Get Inspections
