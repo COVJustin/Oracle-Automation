@@ -1,4 +1,5 @@
 from gettext import find
+from pickle import FALSE
 from selenium import webdriver
 import chromedriver_binary
 from selenium.webdriver.common.by import By
@@ -7,7 +8,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
-from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, TimeoutException, ElementNotInteractableException
+from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, TimeoutException, ElementNotInteractableException, UnexpectedAlertPresentException
 from datetime import datetime as dt
 import zipfile
 import shutil
@@ -25,7 +26,6 @@ def driver_setup(downloadFileLocation):
     options = webdriver.ChromeOptions()
     options.add_experimental_option("detach", True)
     d = downloadFileLocation.replace("/","\\")
-    print(d)
     options.add_experimental_option("prefs", {
         "download.default_directory": r"{}".format(d),
         "download.directory_upgrade": True
@@ -244,17 +244,22 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 WebDriverWait(driver, '45').until(
                         EC.presence_of_element_located((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
                         )
-                time.sleep(1)
-                WebDriverWait(driver, '45').until(
-                        EC.element_to_be_clickable((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
-                        ).click()
-                time.sleep(5)
-                if os.path.exists(downloadFileLocation + '/Fees and Payments.csv'):
-                    shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
-                else:
-                    print("Reached the second attempt at moving file")
-                    time.sleep(15)
-                    shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
+                time.sleep(2.5)
+                skipFee = False
+                try:
+                    driver.find_element(By.XPATH, "//span[contains(.,'The fees have been calculated and there are no fees at this time.')]")
+                    skipFee = True
+                except (NoSuchElementException):
+                    WebDriverWait(driver, '30').until(
+                            EC.element_to_be_clickable((By.CSS_SELECTOR, "#PSCLNP_RECORD_DETAIL_of_DEFAULT-feeRecord-feeItem-Download-DownloadButton .psc-sui-icon-placeholder"))
+                            ).click()
+                    time.sleep(5)
+                    if os.path.exists(downloadFileLocation + '/Fees and Payments.csv'):
+                        shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
+                    else:
+                        print("Reached the second attempt at moving file")
+                        time.sleep(15)
+                        shutil.move(downloadFileLocation + '/Fees and Payments.csv', permitFileLocation + "/" + permit + ' Fees.csv')
                     
 
                 # Get Inspections
@@ -465,6 +470,7 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 
                 reviewStatusDic = {
                     "Approved": "APPROVED",
+                    "Approved with Comments": "APPROVED WITH CONDITIONS",
                     "Revision Required": "PLAN REVIEW CORRECTIONS",
                     "Not Required": "REVIEW NOT REQUIRED",
                     "Rejected": "DENIED",
@@ -759,35 +765,37 @@ def scrapper(url, driver, permitFile, downloadFileLocation, permitFileLocation, 
                 }
                 if oracleType == "COMMERCIAL":
                     feeDic["State SMIP Fee"] = "STATE-SMIP COMMERCIAL = (MAX((JOBVALUE*.00028), .5))"
-                with open(permitFileLocation + "/" + permit + " Fees.csv", "r", newline='') as f:
-                    reader = csv.reader(f)
-                    tempData = list(reader)
-                tempData.pop(0)
-                data = [x for x in tempData if (x[3] == "PAID" or x[3] == "DUE" or x[3] == "REFUND")]
-                incrementFee = 0
-                for i in range(len(data)):
-                    if data[incrementFee][0] in feeDic:
-                        if data[incrementFee][0] == "C1, C2, C3 Permit Coordination Fees":
-                            data[incrementFee][1] = float(data[incrementFee][1]) - 3.0
-                            data.insert(incrementFee + 1, ["C2 PERMIT COORDINATION FEE = 2", 2.0, data[incrementFee][2], data[incrementFee][3], data[incrementFee][4], data[incrementFee][5], data[incrementFee][6]])
-                            data.insert(incrementFee + 1, ["C3 PERMIT COORDINATION FEE = 1", 1.0, data[incrementFee][2], data[incrementFee][3], data[incrementFee][4], data[incrementFee][5], data[incrementFee][6]])
-                            data[incrementFee][0] = feeDic[data[incrementFee][0]]
-                            incrementFee += 2
+                if skipFee == False:
+                    with open(permitFileLocation + "/" + permit + " Fees.csv", "r", newline='') as f:
+                        reader = csv.reader(f)
+                        tempData = list(reader)
+                    tempData.pop(0)
+                    data = [x for x in tempData if (x[3] == "PAID" or x[3] == "DUE" or x[3] == "REFUND")]
+                    incrementFee = 0
+                    for i in range(len(data)):
+                        if data[incrementFee][0] in feeDic:
+                            if data[incrementFee][0] == "C1, C2, C3 Permit Coordination Fees":
+                                data[incrementFee][1] = float(data[incrementFee][1]) - 3.0
+                                data.insert(incrementFee + 1, ["C2 PERMIT COORDINATION FEE = 2", 2.0, data[incrementFee][2], data[incrementFee][3], data[incrementFee][4], data[incrementFee][5], data[incrementFee][6]])
+                                data.insert(incrementFee + 1, ["C3 PERMIT COORDINATION FEE = 1", 1.0, data[incrementFee][2], data[incrementFee][3], data[incrementFee][4], data[incrementFee][5], data[incrementFee][6]])
+                                data[incrementFee][0] = feeDic[data[incrementFee][0]]
+                                incrementFee += 2
+                            else:
+                                data[incrementFee][0] = feeDic[data[incrementFee][0]]
                         else:
-                            data[incrementFee][0] = feeDic[data[incrementFee][0]]
-                    else:
-                        error.write(permit + " Fee Not Found: " + data[incrementFee][0] + "\n")
-                    incrementFee += 1
-                verifyDict = {}
-                try:
-                    verifyDict = [{ "Fee Description":a[0], "Amount":a[1], "Currency":a[2], "Status": a[3], "Department":a[4], "Assessed Date":a[5], "Payment Date":a[6], "Invoice":a[7]} for a in data]
-                except:
-                    verifyDict = [{ "Fee Description":a[0], "Amount":a[1], "Currency":a[2], "Status": a[3], "Department":a[4], "Assessed Date":a[5], "Payment Date":a[6], "Invoice":""} for a in data]
-                feedf = pd.DataFrame(verifyDict)
-                feedf.to_csv(permitFileLocation + "/" + permit + " Fees.csv", index=False, header=True)
+                            error.write(permit + " Fee Not Found: " + data[incrementFee][0] + "\n")
+                        incrementFee += 1
+                    verifyDict = {}
+                    try:
+                        verifyDict = [{ "Fee Description":a[0], "Amount":a[1], "Currency":a[2], "Status": a[3], "Department":a[4], "Assessed Date":a[5], "Payment Date":a[6], "Invoice":a[7]} for a in data]
+                    except:
+                        verifyDict = [{ "Fee Description":a[0], "Amount":a[1], "Currency":a[2], "Status": a[3], "Department":a[4], "Assessed Date":a[5], "Payment Date":a[6], "Invoice":""} for a in data]
+                    feedf = pd.DataFrame(verifyDict)
+                    feedf.to_csv(permitFileLocation + "/" + permit + " Fees.csv", index=False, header=True)
                 with zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip", 'w') as zipPerm:
                     zipPerm.write(permitFileLocation + "/" + permit + " Information.csv", arcname=permit + " Information.csv")
-                    zipPerm.write(permitFileLocation + "/" + permit + " Fees.csv", arcname=permit + " Fees.csv")
+                    if skipFee == False:
+                        zipPerm.write(permitFileLocation + "/" + permit + " Fees.csv", arcname=permit + " Fees.csv")
                     if skipInspec == False:
                         zipPerm.write(permitFileLocation + "/" + permit + " Inspection.csv", arcname=permit + " Inspection.csv")
                     if skipRev == False:
