@@ -213,6 +213,10 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
             applyDate = infoData.at[0, 'Applied']
             expDate = infoData.at[0, 'Expired']
             issueDate = infoData.at[0, 'Issued']
+            contname = infoData.at[0, 'Primary Contact']
+            appname = infoData.at[0, 'Applicant']
+            contnum = infoData.at[0, 'Primary Contact Phone']
+            contemail = infoData.at[0, 'Primary Contact Email']
     driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
     time.sleep(2)
     WebDriverWait(driver, '45').until(
@@ -344,6 +348,51 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
             EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
             )
         driver.switch_to.frame("FRMPERMIT")
+    applicantexist = WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblApplicantNameNoEdit']"))
+            ).text
+    if applicantexist == " ":
+        applicantrow = WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//span[contains(.,'APPLICANT')]/../../../../../../.."))
+            )
+        applicantedit = WebDriverWait(applicantrow, '45').until(
+            EC.presence_of_all_elements_located((By.XPATH, "./child::td"))
+            )
+        WebDriverWait(applicantedit[2], '45').until(
+            EC.presence_of_element_located((By.XPATH, ".//input"))
+            ).click()
+        driver.switch_to.parent_frame()
+        applicantinner = WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, 'rw'))
+                )
+        driver.switch_to.frame(applicantinner)
+        nameentry = WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_txtName']"))
+                )
+        nameentry.send_keys(Keys.CONTROL + "a")
+        nameentry.send_keys(Keys.DELETE)
+        nameentry.send_keys(appname)
+        time.sleep(3)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'Create new')]"))
+                ).click()
+        time.sleep(2)
+        if contname == appname:
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_txtPhone']"))
+                    ).send_keys(str(contnum).replace("+1", "").replace("(", "").replace(")", "").replace("-", "").replace(" ", ""))
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_txtEmail']"))
+                    ).send_keys(contemail)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                ).click()
+        time.sleep(2)
+        driver.switch_to.parent_frame()
+        WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+            )
+        driver.switch_to.frame("FRMPERMIT")
     time.sleep(3)
     
     """
@@ -389,7 +438,7 @@ def inputFees(driver, permit, permitFileLocation):
             EC.presence_of_element_located((By.XPATH, "//a[@id='ctl12_C_ctl00_lnkBtnFeesDue']"))
             )
     try:
-        driver.find_element(By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnCancelEditAllFeesBottom']")
+        driver.find_element(By.XPATH, "//input[@id = 'ctl12_C_ctl00_imgBtnEditAllFeesBottom']")
     except NoSuchElementException:
         z = zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip")
         if (permit + " Fees.csv") in z.namelist():

@@ -2,6 +2,8 @@ import PySimpleGUI as sg
 import threading
 import OracleToCS
 import os
+import io
+import csv
 import zipfile
 import pandas as pd
 
@@ -10,9 +12,9 @@ dic = {"": [{"sub": ""}], "SINGLE FAMILY RESIDENTIAL": [{"sub": ""}, {"sub": "AC
 def long_operation_thread(p, pf, cu, cp, t, st, d, f, i, pr, window):
     OracleToCS.transfer('https://vall-trk.aspgov.com/CommunityDevelopment/default.aspx', OracleToCS.driver_setup(), p.upper(), pf, cu, cp, t, st, d, f, i, pr)
     if f == True:
-        window.write_event_value("-THREAD-", p + " Has Finished Transferring ! DON'T FORGET TO PAY OUT FEES !")
-    else:
-        window.write_event_value("-THREAD-", p + " Has Finished Transferring !")
+        window["Status"].update(p + " Has Finished Transferring ! DON'T FORGET TO PAY OUT FEES !")
+    window["Status"].update(p + " Has Finished Transferring !")
+    window.refresh()
 
 sg.theme("DarkGray2")
 inputlayout = [[sg.Text("Select Permit Folder: ", size=(15, 1)), sg.Input(key="PermitFolder"), sg.FolderBrowse(key="PermitFolder")],
@@ -37,30 +39,53 @@ startlayout = [[sg.Push(), sg.Button("Transfer", size=(8, 2)), sg.Push()],
 toplayout = [sg.Column(inputlayout), sg.Column(selectlayout)]
 layout = [toplayout, startlayout]
 
-window = sg.Window('OracleToCS', layout, size=(850,375))
-prompt = window['Status'].update
+window = sg.Window('OracleToCS', layout, size=(850,375), finalize=True)
 descup = window['Description'].update
+cache = open("cache.txt", "r")
+cachelogin = cache.readline()
+cachearray = cachelogin.split("#")
+if len(cachearray) == 3:
+    window["PermitFolder"].update(cachearray[0])
+    window["CentralUser"].update(cachearray[1])
+    window["CentralPassword"].update(cachearray[2])
 input_key_list = [key for key, value in window.key_dict.items()
     if isinstance(value, sg.Input)]
 while True:
     event, values = window.read()
     if event == sg.WIN_CLOSED or event=="Exit":
         break
-    elif event == "Transfer":
-        if all(map(str.strip, [values[key] for key in input_key_list])):
-            prompt("Running Transfer...")
-            threading.Thread(target=long_operation_thread, args=(values["Permit"].upper(), values["PermitFolder"], values["CentralUser"], values["CentralPassword"], values["Type"], values["SubType"], values["Desc"], values["Fees"], values["Ins"], values["PR"], window), daemon=True).start()
-        else:
-            prompt("Please Complete All Fields")
-    elif event == "Type":
-        item = values[event]
-        title_list = [i["sub"] for i in dic[item]]
-        window['SubType'].update(value=title_list[0], values=title_list)
-    elif os.path.exists(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip"):
-        with zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip", 'r') as zin:
-            with zin.open(values["Permit"].upper() + " Information.csv") as infofile:
-                inforeader = pd.read_csv(infofile)
-                infoData = pd.DataFrame(inforeader)
-            descup("RESVCOM: " + infoData.at[0, 'Residential/Commercial'] + "\n\nDESCRIPTION:\n" + infoData.at[0, 'Oracle Description'])
-    elif event == "-THREAD-":
-        prompt(values[event])
+    else:
+        if event == "Transfer":
+            if all(map(str.strip, [values[key] for key in input_key_list])):
+                window['Status'].update("Running Transfer...")
+                if (values["PermitFolder"] + "#" + values["CentralUser"] + "#" + values["CentralPassword"]) != cachelogin:
+                    with open('cache.txt', 'w') as newcache:
+                        newcache.write(values["PermitFolder"] + "#" + values["CentralUser"] + "#" + values["CentralPassword"])
+                if os.path.exists(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip"):
+                    threading.Thread(target=long_operation_thread, args=(values["Permit"].upper(), values["PermitFolder"], values["CentralUser"], values["CentralPassword"], values["Type"], values["SubType"], values["Desc"], values["Fees"], values["Ins"], values["PR"], window), daemon=True).start()
+                    z = zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip")
+                    if (values["Permit"].upper() + " Fees.csv") in z.namelist() and values["Fees"] == True:
+                        outputstr = "REMEMBER TO PAY OUT FEES !!"
+                        with zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip", 'r') as zin:
+                            feedata = io.StringIO(zin.read(values["Permit"].upper() + " Fees.csv").decode('utf-8'))
+                            reader = csv.reader(feedata)
+                            fd = list(reader)
+                        fd.pop(0)
+                        for row in fd:
+                            if row[3] == "DUE":
+                                outputstr += "\nDUE: " + row[0].partition(" = ")[0] + " = " + str(row[1])
+                        sg.Popup(outputstr, no_titlebar = True, grab_anywhere = True, keep_on_top = True, modal = True)
+                else:
+                    window['Status'].update("Invalid Permit")
+            else:
+                window['Status'].update("Please Complete All Fields")
+        elif event == "Type":
+            item = values[event]
+            title_list = [i["sub"] for i in dic[item]]
+            window['SubType'].update(value=title_list[0], values=title_list)
+        elif os.path.exists(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip"):
+            with zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip", 'r') as zin:
+                with zin.open(values["Permit"].upper() + " Information.csv") as infofile:
+                    inforeader = pd.read_csv(infofile)
+                    infoData = pd.DataFrame(inforeader)
+                descup("RESVCOM: " + infoData.at[0, 'Residential/Commercial'] + "\n\nDESCRIPTION:\n" + infoData.at[0, 'Oracle Description'])
