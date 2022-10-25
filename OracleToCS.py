@@ -61,19 +61,6 @@ def login(url, driver, permit, central_user, central_pass):
     driver.switch_to.frame("FRMPERMIT")
 
 def inputPR(driver, permit, permitFileLocation):
-    reviewDic = {
-        "PLNG-PROJECT REVIEW": "]/ul/li[12]/div/span[3]",
-        "BLDG-PLAN REVIEW": "]/ul/li[3]/div/span[3]",
-        "PW-WATER": "]/ul/li[22]/div/span[3]",
-        "VSFCD-SEWER": "]/ul/li[30]/div/span[3]",
-        "VFPD-FIRE PLAN REVIEW": "]/ul/li[29]/div/span[3]",
-        "PW-FLOODPLAIN REVIEW": "]/ul/li[19]/div/span[3]",
-        "PW-CURRENT DEVELOPMENT": "]/ul/li[16]/div/span[3]",
-        "PW-WASTE MGMT. PLAN": "]/ul/li[21]/div/span[3]",
-        "PW-TRAFFIC ENGINEER": "]/ul/li[20]/div/span[3]",
-        "SOLANO CO-ENVIRONMENTAL HEALTH": "]/ul/li[24]/div/span[3]",
-        "ED-LEASE REVIEW": "]/ul/li[11]/div/span[3]"
-    }
     z = zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip")
     if (permit + " Reviews.csv") in z.namelist():
         with zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip", 'r') as zin:
@@ -110,11 +97,14 @@ def inputPR(driver, permit, permitFileLocation):
                         EC.presence_of_element_located((By.NAME, 'rw'))
                         )
                 driver.switch_to.frame(innerframe)
+                cycleexpand = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//div/ul/li[" + str(eval('3 + ' + str(reviewData[i][0]))) + "]/div/span[2]/../.."))
+                        )
                 WebDriverWait(driver, '45').until(
                         EC.element_to_be_clickable((By.XPATH, "//div/ul/li[" + str(eval('3 + ' + str(reviewData[i][0]))) + "]/div/span[2]"))
                         ).click()
-                WebDriverWait(driver, '45').until(
-                        EC.element_to_be_clickable((By.XPATH, "//li[" + str(eval('3 + ' + str(reviewData[i][0]))) + reviewDic[reviewData[i][2]]))
+                WebDriverWait(cycleexpand, '45').until(
+                        EC.element_to_be_clickable((By.XPATH, ".//span[text()='" + str(reviewData[i][2]) + "']"))
                         ).click()
                 time.sleep(2)
                 WebDriverWait(driver, '45').until(
@@ -378,9 +368,15 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
                 ).click()
         time.sleep(2)
         if contname == appname:
+            """
             WebDriverWait(driver, '45').until(
                     EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_txtPhone']"))
-                    ).send_keys(str(contnum).replace("+1", "").replace("(", "").replace(")", "").replace("-", "").replace(" ", ""))
+                    ).click()
+            time.sleep(1)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_txtPhone']"))
+                    ).send_keys(int(str(contnum).replace("+1", "").replace("(", "").replace(")", "").replace("-", "").replace(" ", "")))
+            """
             WebDriverWait(driver, '45').until(
                     EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_txtEmail']"))
                     ).send_keys(contemail)

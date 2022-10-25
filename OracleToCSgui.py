@@ -71,9 +71,13 @@ while True:
                             reader = csv.reader(feedata)
                             fd = list(reader)
                         fd.pop(0)
+                        lastdate = ""
                         for row in fd:
                             if row[3] == "DUE":
                                 outputstr += "\nDUE: " + row[0].partition(" = ")[0] + " = " + str(row[1])
+                            if row[6] != "":
+                                lastdate = row[6]
+                        outputstr += "\nLAST PAYMENT DATE: " + lastdate
                         sg.Popup(outputstr, no_titlebar = True, grab_anywhere = True, keep_on_top = True, modal = True)
                 else:
                     window['Status'].update("Invalid Permit")
