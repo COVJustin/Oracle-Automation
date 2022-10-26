@@ -628,39 +628,51 @@ def inputIns(driver, permit, permitFileLocation):
                 completeDate = row[16]
                 completeTime = "1"
                 result = row[17]
+                comments = row[20]
 
-                WebDriverWait(driver, '45').until(
+                WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddInspector_Input"]'))
                         ).click()
-                time.sleep(1)
+                time.sleep(2.5)
                 try:
-                        WebDriverWait(driver, '45').until(
+                        inspector = WebDriverWait(driver, '20').until(
                         EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ inspect +"')]"))
-                        ).click()
-                except:
-                        WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddInspector_Input"]'))
-                        ).click()
+                        )
+                        inspector.click()
+                except ElementClickInterceptedException:
+                        time.sleep(2.5)
+                        try:
+                                inspector = WebDriverWait(driver, '20').until(
+                                EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddInspector_Input"]'))
+                                )
+                                try: 
+                                        inspector.click()
+                                except (ElementClickInterceptedException,ElementNotInteractableException):
+                                        print("2nd attempt not interactible")
+                        except ElementClickInterceptedException:
+                                print("Error finding element")
+                        
+
                 time.sleep(2)
 
                 defaultDate = setDate[0]
-                WebDriverWait(driver, '45').until(
+                WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddSetDefault_Input"]'))
                         ).send_keys(defaultDate)
 
-                scheduled = WebDriverWait(driver, '45').until(
+                scheduled = WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$calScheduledDate$dateInput']"))
                         )
                 scheduled.send_keys(Keys.CONTROL + "a")
                 scheduled.send_keys(Keys.DELETE)
                 scheduled.send_keys(scheduleDate)
 
-                WebDriverWait(driver, '45').until(
+                WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$ddScheduleTime']"))
                         ).send_keys(scheduleTime)
                 
                 
-                completed = WebDriverWait(driver, '45').until(
+                completed = WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$calCompletedDate$dateInput']"))
                         )
                 completed.send_keys(completeDate)
@@ -668,149 +680,289 @@ def inputIns(driver, permit, permitFileLocation):
                 secondTime = driver.find_element(By.XPATH, "//input[@name = 'ctl08$ddCompletedTime']")
                 secondTime.send_keys(completeTime)
 
-                res = result[0]
-                finalResult= WebDriverWait(driver, '45').until(
+                WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddResult_Input"]'))
-                        )
-                finalResult.send_keys(res)
-        
-                driver.find_element(By. XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/div/span[2]').click()
-                if row[1] == '101 SURVEY/SET BACKS':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[66]/div/span[3]').click()
-                elif row[1] == '102 UFER/GROUND ELECTRODE':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[67]/div/span[3]').click()
-                elif row[1] == '103 PIERS':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[68]/div/span[3]').click()
-                elif row[1] == '104 FOOTINGS':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[69]/div/span[3]').click()
-                elif row[1] == '105 SLAB FOUNDATIONS':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[70]/div/span[3]').click()
-                elif row[1] == '106 SlAB GARAGE':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[71]/div/span[3]').click()
-                elif row[1] == '107 DRIVEWAY':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[72]/div/span[3]').click()
-                elif row[1] == '108 DEMOLITION':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[73]/div/span[3]').click()
-                elif row[1] == '200 ROUGH GRADING':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[75]/div/span[3]').click()
-                elif row[1] == '201 FINISH GRADING':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[76]/div/span[3]').click()
-                elif row[1] == '202 GEN BLDG SITE/IN-PRO':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[77]/div/span[3]').click()
-                elif row[1] == '300 MH SET-UP':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[78]/div/span[3]').click()
-                elif row[1] == '301 MH ACCESSORY INSP':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[79]/div/span[3]').click()
-                elif row[1] == '302 MH PERM FOUNDATION':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[80]/div/span[3]').click()
-                elif row[1] == '303 MH-FINAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[81]/div/span[3]').click()
-                elif row[1] == '400 UNDERFLOOR FRAME':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[82]/div/span[3]').click()
-                elif row[1] == '401 SHEAR NAIL-EXT':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[83]/div/span[3]').click()
-                elif row[1] == '402 SHEAR NAIL-INT':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[84]/div/span[3]').click()
-                elif row[1] == '403 ROOF DECK NAIL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[85]/div/span[3]').click()
-                elif row[1] == '404 ROUGH FRAME':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[86]/div/span[3]').click()
-                elif row[1] == '405 EXT. LATH/SLIDING':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[87]/div/span[3]').click()
-                elif row[1] == '406 DRYWALL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[88]/div/span[3]').click()
-                elif row[1] == '407 FIREWALL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[89]/div/span[3]').click()
-                elif row[1] == '408 GREEN/GRAY/PURPLE-BD':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[90]/div/span[3]').click()
-                elif row[1] == '409 WET WALL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[91]/div/span[3]').click()
-                elif row[1] == '410 STRUCTURAL MISC/T-BAR':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[92]/div/span[3]').click()
-                elif row[1] == '411 ROOF/IN-PROGRESS':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[93]/div/span[3]').click()
-                elif row[1] == '412 WINDOW REPLACEMENT':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[94]/div/span[3]').click()
-                elif row[1] == '413 FIREWALL PENETRATION':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[95]/div/span[3]').click()
-                elif row[1] == '414 STRUCTURAL OTHER':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[96]/div/span[3]').click()
-                elif row[1] == '501 CONDUIT/UNDERGROUND':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[98]/div/span[3]').click()
-                elif row[1] == '502 SERVICE ENTRANCE':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[99]/div/span[3]').click()
-                elif row[1] == '503 ROUGH ELECTRICAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[100]/div/span[3]').click()
-                elif row[1] == '504 BONDING/GROUNDING':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[101]/div/span[3]').click()
-                elif row[1] == '505 ELECTRIC RESTORE SERVICE':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[102]/div/span[3]').click()
-                elif row[1] == '507 ELECTRIC METER RELEASE':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[103]/div/span[3]').click()
-                elif row[1] == '600 UNDERFLOOR INSULATION':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[105]/div/span[3]').click()
-                elif row[1] == '601 FRAMING INSULATION':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[106]/div/span[3]').click()
-                elif row[1] == '602 CEILING INSULATION':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[107]/div/span[3]').click()
-                elif row[1] == '700 GROUND PLUMBING':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[108]/div/span[3]').click()
-                elif row[1] == '701 UNDERFLOOR PLUMBING':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[109]/div/span[3]').click()
-                elif row[1] == '702 ROUGH PLUMBING':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[110]/div/span[3]').click()
-                elif row[1] == '703 SHOWER PAN TEST':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[111]/div/span[3]').click()
-                elif row[1] == '704 WATER SERVICE/PIPING':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[112]/div/span[3]').click()
-                elif row[1] == '705 WATER HEATER':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[113]/div/span[3]').click()
-                elif row[1] == '706 GAS PRESSURE TEST/PIPING':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[114]/div/span[3]').click()
-                elif row[1] == '707 GAS METER RELEASE':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[115]/div/span[3]').click()
-                elif row[1] == '708 GAS RESTORE SERVICE':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[116]/div/span[3]').click()
-                elif row[1] == '801 CMU-LIFTS 1,2,3...':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[119]/div/span[3]').click()
-                elif row[1] == '900 SITE CHECK/PRE-GUNITE':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[120]/div/span[3]').click()
-                elif row[1] == '901 BOND CVTY/DECK':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[121]/div/span[3]').click()
-                elif row[1] == '902 POOL FENCE/DOOR ALARM':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[122]/div/span[3]').click()
-                elif row[1] == '903 POOL PREFINAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[123]/div/span[3]').click()
-                elif row[1] == '904 POOL/SPA FINAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[124]/div/span[3]').click()
-                elif row[1] == '925 FURNACE REPLACEMENT':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[125]/div/span[3]').click()
-                elif row[1] == '926 ROUGH MECHANICAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[126]/div/span[3]').click()
-                elif row[1] == '930 A/C CONDENSER':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[130]/div/span[3]').click()
-                elif row[1] == '931 WALL HEATER':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[131]/div/span[3]').click()
-                elif row[1] == '932 HVAC PACKAGE UNIT':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[132]/div/span[3]').click()
-                elif row[1] == '950 BUILDING FINAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[133]/div/span[3]').click()
-                elif row[1] == '951 ELECTRICAL FINAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[134]/div/span[3]').click()
-                elif row[1] == '952 PLUMBING FINAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[135]/div/span[3]').click()
-                elif row[1] == '953 MECHANICAL FINAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[136]/div/span[3]').click()
-                elif row[1] == '954 GRADING FINAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[137]/div/span[3]').click()
-                elif row[1] == '955 DEMOLITION FINAL':
-                        driver.find_element(By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[138]/div/span[3]').click()
-
-                WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_btnSave"]'))
                         ).click()
-
-
+                time.sleep(1.5)
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddResult_Input"]'))
+                        ).click()
+                canceled = row[2]
+                if canceled == "CANCELED":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ canceled +"')]"))
+                        ).click()
+                else:
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ result +"')]"))
+                        ).click()
+                        
+                driver.find_element(By. XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/div/span[2]').click()
+                time.sleep(1)
+                if row[1] == '101-SURVEY/SET BACKS':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[66]/div/span[3]'))
+                        ).click()
+                elif row[1] == '102-UFER/GRND. ELECTRODE':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[67]/div/span[3]'))
+                        ).click()
+                elif row[1] == '103-PIERS':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[68]/div/span[3]'))
+                        ).click()
+                elif row[1] == "104-FOOTINGS":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[69]/div/span[3]'))
+                        ).click()
+                elif row[1] == "105-SLAB FOUNDATIONS":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[70]/div/span[3]'))
+                        ).click()
+                elif row[1] == "106-SLAB GARAGE":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[71]/div/span[3]'))
+                        ).click()
+                elif row[1] == "107-DRIVEWAY":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[72]/div/span[3]'))
+                        ).click()
+                elif row[1] == "108-DEMOLITION":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[73]/div/span[3]'))
+                        ).click()
+                elif row[1] == "200-ROUGH GRADING":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[75]/div/span[3]'))
+                        ).click()
+                elif row[1] == '201-FINISH GRADING':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[76]/div/span[3]'))
+                        ).click()
+                elif row[1] == "202-GEN BLDG SITE/IN-PRO":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[77]/div/span[3]'))
+                        ).click()
+                elif row[1] == "300-MH SET-UP":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[78]/div/span[3]'))
+                        ).click()
+                elif row[1] == "301-MH - ACCESSORY INSP.":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[79]/div/span[3]'))
+                        ).click()
+                elif row[1] == "301-MH PEM. FOUNDATION":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[80]/div/span[3]'))
+                        ).click()
+                elif row[1] == "303-MH - FINAL**":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[81]/div/span[3]'))
+                        ).click()
+                elif row[1] == '400-UNDERFLOOR FRAME':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[82]/div/span[3]'))
+                        ).click()
+                elif row[1] == '401-SHEAR NAIL-EXT':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[83]/div/span[3]'))
+                        ).click()
+                elif row[1] == '402-SHEAR NAIL-INT':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[84]/div/span[3]'))
+                        ).click()
+                elif row[1] == '403-ROOF DECK NAIL':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[85]/div/span[3]'))
+                        ).click()
+                elif row[1] == '404-ROUGH FRAME':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[86]/div/span[3]'))
+                        ).click()
+                elif row[1] == "405-EXT. LATH/SLIDING":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[87]/div/span[3]'))
+                        ).click()
+                elif row[1] == '406-DRYWALL':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[88]/div/span[3]'))
+                        ).click()
+                elif row[1] == '407-FIREWALL':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[89]/div/span[3]'))
+                        ).click()
+                elif row[1] == '408-GREEN/GRAY/PURPLE-BD':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[90]/div/span[3]'))
+                        ).click()
+                elif row[1] == '409-WET WALL':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[91]/div/span[3]'))
+                        ).click()
+                elif row[1] == '410-STRUCTURAL MISC/T-BAR':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[92]/div/span[3]'))
+                        ).click()
+                elif row[1] == '411-ROOF/IN-PROGRESS':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[93]/div/span[3]'))
+                        ).click()
+                elif row[1] == '412-WINDOW REPLACEMENT':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[94]/div/span[3]'))
+                        ).click()
+                elif row[1] == '413-FIREWALL PENETRATION':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[95]/div/span[3]'))
+                        ).click()
+                elif row[1] == '414-STRUCTURAL OTHER':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[96]/div/span[3]'))
+                        ).click()
+                elif row[1] == "501-CONDUIT/UNDERGROUND":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[98]/div/span[3]'))
+                        ).click()
+                elif row[1] == '502-SERVICE ENTRANCE':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[99]/div/span[3]'))
+                        ).click()
+                elif row[1] == '503-ROUGH ELECTRICAL':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[100]/div/span[3]'))
+                        ).click()
+                elif row[1] == '504-BONDING/GROUNDING':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[101]/div/span[3]'))
+                        ).click()
+                elif row[1] == '505-ELECTRIC RESTORE SERVICE':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[102]/div/span[3]'))
+                        ).click()
+                elif row[1] == '507-ELECTRIC METER RELEASE':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[103]/div/span[3]'))
+                        ).click()
+                elif row[1] == '600-UNDERFLOOR INSULATION':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[105]/div/span[3]'))
+                        ).click()
+                elif row[1] == '601-FRAMING INSULATION':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[106]/div/span[3]'))
+                        ).click()
+                elif row[1] == '602-CEILING INSULATION':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[107]/div/span[3]'))
+                        ).click()
+                elif row[1] == '700-GROUND PLUMBING':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[108]/div/span[3]'))
+                        ).click()
+                elif row[1] == '701-UNDERFLOOR PLUMBING':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[109]/div/span[3]'))
+                        ).click()
+                elif row[1] == '702-ROUGH PLUMBING':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[110]/div/span[3]'))
+                        ).click()
+                elif row[1] == '703-SHOWER PAN TEST':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[111]/div/span[3]'))
+                        ).click()
+                elif row[1] == '704-WATER SERVICE/PIPING':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[112]/div/span[3]'))
+                        ).click()
+                elif row[1] == '705-WATER HEATER':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[113]/div/span[3]'))
+                        ).click()
+                elif row[1] == '706-GAS PRESSURE TEST/PIPING':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[114]/div/span[3]'))
+                        ).click()
+                elif row[1] == '707-GAS METER RELEASE':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[115]/div/span[3]'))
+                        ).click()
+                elif row[1] == '708-GAS RESTORE SERVICE':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[116]/div/span[3]'))
+                        ).click()
+                elif row[1] == "801-CMU - LIFTS 1,2,3...":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[119]/div/span[3]'))
+                        ).click()
+                elif row[1] == '900-SITE CHECK/PRE-GUNITE':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[120]/div/span[3]'))
+                        ).click()
+                elif row[1] == '901-BOND CVTY/DECK':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[121]/div/span[3]'))
+                        ).click()
+                elif row[1] == "902-POOL FENCE/DOOR ALAR":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[122]/div/span[3]'))
+                        ).click()
+                elif row[1] == '903-POOL PREFINAL':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[123]/div/span[3]'))
+                        ).click()
+                elif row[1] == "904-POOL/SPA FINAL**":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[124]/div/span[3]'))
+                        ).click()
+                elif row[1] == '925-FURNACE REPLACEMENT':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[125]/div/span[3]'))
+                        ).click()
+                elif row[1] == '926-ROUGH MECHANICAL':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[126]/div/span[3]'))
+                        ).click()
+                elif row[1] == '930-A/C CONDENSER':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[130]/div/span[3]'))
+                        ).click()
+                elif row[1] == '931-WALL HEATER':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[131]/div/span[3]'))
+                        ).click()
+                elif row[1] == '932-HVAC PACKAGE UNIT':
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[132]/div/span[3]'))
+                        ).click()
+                elif row[1] == "950-BUILDING FINAL**":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[133]/div/span[3]'))
+                        ).click()
+                elif row[1] == "951-ELECTRICAL FINAL**":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[134]/div/span[3]'))
+                        ).click()
+                elif row[1] == "952-PLUMBING FINAL**":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[135]/div/span[3]'))
+                        ).click()
+                elif row[1] == "953-MECHANICAL FINAL**":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[136]/div/span[3]'))
+                        ).click()
+                elif row[1] == "954-GRADING FINAL**":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[137]/div/span[3]'))
+                        ).click()
+                elif row[1] == "955-DEMOLITION FINAL**":
+                        WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/ul/li[138]/div/span[3]'))
+                        ).click()
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                                EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_btnSave"]'))
+                                ).click()
                 driver.switch_to.parent_frame()
                 WebDriverWait(driver, '45').until(
                         EC.presence_of_element_located((By.XPATH, '//*[@id="modalPage"]/div[2]/div/div/table/tbody/tr/td/img[1]'))
@@ -823,54 +975,6 @@ def inputIns(driver, permit, permitFileLocation):
                         EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
                         )
                 driver.switch_to.frame("FRMPERMIT")
-
-def transfer(url, driver, permit, permitFileLocation, central_user, central_pass, permtype, permsubtype, needDesc, needFees, needIns, needPR):
-    login(url, driver, permit, central_user, central_pass)
-    if needPR:
-        status = WebDriverWait(driver, '45').until(
-                    EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
-                    ).text
-        inputPR(driver, permit, permitFileLocation)
-        if needDesc == False:
-            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
-            time.sleep(2)
-            WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
-                ).click()
-            WebDriverWait(driver, '45').until(
-                    EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
-                    ).click()
-            time.sleep(1)
-            WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
-                    ).click()
-            deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
-            deleteApp.send_keys(Keys.CONTROL + "a")
-            deleteApp.send_keys(Keys.DELETE)
-            save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
-            save.click()
-
-            time.sleep(5)
-            driver.switch_to.parent_frame()
-            try:
-                driver.find_element(By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)").click()
-            except NoSuchElementException:
-                print("Valid date")
-            try:
-                time.sleep(5)
-                innerframe3 = driver.find_element(By.NAME, 'rwEvents')
-                driver.switch_to.frame(innerframe3)
-                driver.find_element(By.XPATH, "//input[@id='btnNo0']").click()
-                WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//input[@id='btnClose']"))
-                    ).click()
-                driver.switch_to.parent_frame()
-            except NoSuchElementException:
-                print("Valid expiration")
-            WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-                )
-            driver.switch_to.frame("FRMPERMIT")
     if needDesc:
         inputDesc(driver, permit, permitFileLocation, permtype, permsubtype)
     if needFees:
