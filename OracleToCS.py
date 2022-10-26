@@ -1001,6 +1001,54 @@ def inputIns(driver, permit, permitFileLocation):
                         )
                 driver.switch_to.frame("FRMPERMIT")
                 editBtn +1
+    
+    def transfer(url, driver, permit, permitFileLocation, central_user, central_pass, permtype, permsubtype, needDesc, needFees, needIns, needPR):
+    login(url, driver, permit, central_user, central_pass)
+    if needPR:
+        status = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
+                    ).text
+        inputPR(driver, permit, permitFileLocation)
+        if needDesc == False:
+            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+                ).click()
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                    ).click()
+            time.sleep(1)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                    ).click()
+            deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
+            deleteApp.send_keys(Keys.CONTROL + "a")
+            deleteApp.send_keys(Keys.DELETE)
+            save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+            save.click()
+
+            time.sleep(5)
+            driver.switch_to.parent_frame()
+            try:
+                driver.find_element(By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)").click()
+            except NoSuchElementException:
+                print("Valid date")
+            try:
+                time.sleep(5)
+                innerframe3 = driver.find_element(By.NAME, 'rwEvents')
+                driver.switch_to.frame(innerframe3)
+                driver.find_element(By.XPATH, "//input[@id='btnNo0']").click()
+                WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='btnClose']"))
+                    ).click()
+                driver.switch_to.parent_frame()
+            except NoSuchElementException:
+                print("Valid expiration")
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                )
+            driver.switch_to.frame("FRMPERMIT")
     if needDesc:
         inputDesc(driver, permit, permitFileLocation, permtype, permsubtype)
     if needFees:
