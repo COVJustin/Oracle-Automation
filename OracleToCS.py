@@ -451,15 +451,14 @@ def inputFees(driver, permit, permitFileLocation):
                 found = False
                 maxnum = 0.0
                 maxfeeindex = 0
-                paidlength = [x for x in data if x[3] == "PAID"]
-                for j in range(len(paidlength)):
-                    if (float(data[j][1]) == float(data[i][1])) and (data[j][0] == data[j][0]) and found == False:
+                for j in range(len(data)):
+                    if (float(data[j][1]) == float(data[i][1])) and (data[j][0] == data[j][0]) and (found == False) and data[j][3] == "PAID":
                         found = True
                         data[j][1] = str(0.0)
                         totalrefund += float(data[i][1])
                         refundnote += data[i][0].partition(" = ")[0] + ": -" + data[i][1] + "\n"
                         data[i][0] = "DELETE"
-                    if (data[j][0] == data[i][0]) and found == False:
+                    if (data[j][0] == data[i][0]) and found == False and data[j][3] == "PAID":
                         if float(data[j][1]) > maxnum:
                             maxnum = float(data[i][1])
                             maxfeeindex = j
