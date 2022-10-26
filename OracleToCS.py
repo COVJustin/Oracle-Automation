@@ -629,6 +629,7 @@ def inputIns(driver, permit, permitFileLocation):
                 completeTime = "1"
                 result = row[17]
                 comments = row[20]
+                editBtn = 0
 
                 WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddInspector_Input"]'))
@@ -975,6 +976,31 @@ def inputIns(driver, permit, permitFileLocation):
                         EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
                         )
                 driver.switch_to.frame("FRMPERMIT")
+                time.sleep(1)
+                WebDriverWait(driver, '45').until(
+                                EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl14$C$ctl00$rlvInspections$ctrl"+str(editBtn)+"$btnEdit']"))
+                                ).click()
+                driver.switch_to.parent_frame()
+                innerframe = driver.find_element(By.NAME,'rw')
+                driver.switch_to.frame(innerframe)
+                WebDriverWait(driver, '20').until(
+                EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ctrlNotes_txtNoteSave"]'))
+                ).send_keys(comments)
+                time.sleep(1)
+                
+                WebDriverWait(driver, '45').until(
+                                EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_btnSave"]'))
+                                ).click()
+                driver.switch_to.parent_frame()
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                        EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                        )
+                WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
+                        )
+                driver.switch_to.frame("FRMPERMIT")
+                editBtn +1
     if needDesc:
         inputDesc(driver, permit, permitFileLocation, permtype, permsubtype)
     if needFees:
