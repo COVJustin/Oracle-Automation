@@ -103,7 +103,7 @@ def login(url, driver, permit, central_user, central_pass, permitFileLocation, p
         WebDriverWait(driver, '45').until(
                 EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'Permit linked to this record')]"))
                 ).click()
-        time.sleep(1)
+        time.sleep(2)
         WebDriverWait(driver, '45').until(
                 EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboType_Input']"))
                 ).click()
@@ -111,7 +111,7 @@ def login(url, driver, permit, central_user, central_pass, permitFileLocation, p
         WebDriverWait(driver, '45').until(
                 EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + permtype + "')]"))
                 ).click()
-        time.sleep(1)
+        time.sleep(2)
         WebDriverWait(driver, '45').until(
                 EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboSubType_Input']"))
                 ).click()
@@ -119,7 +119,7 @@ def login(url, driver, permit, central_user, central_pass, permitFileLocation, p
         WebDriverWait(driver, '45').until(
                 EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + permsubtype + "')]"))
                 ).click()
-        time.sleep(1)
+        time.sleep(2)
         recorddesc = WebDriverWait(driver, '45').until(
                 EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_txtDesc']"))
                 )
@@ -507,7 +507,7 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
         WebDriverWait(driver, '45').until(
                 EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$imgBtnSaveAllValuationsTop']"))
                 ).click()
-        time.sleep(5)
+        time.sleep(7.5)
 
 def inputFees(driver, permit, permitFileLocation):
     WebDriverWait(driver, '45').until(
