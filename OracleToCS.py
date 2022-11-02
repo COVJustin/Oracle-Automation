@@ -7,7 +7,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
-from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException
+from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException, TimeoutException
 from datetime import datetime as dt
 import io
 import zipfile
@@ -27,7 +27,7 @@ def driver_setup():
     return driver
 
 # function to log into Central Square & Oracle and search permits
-def login(url, driver, permit, central_user, central_pass):
+def login(url, driver, permit, central_user, central_pass, permitFileLocation, permtype, permsubtype):
     print("logging in to Central Square....")
     driver.get(url)
     driver.maximize_window()
@@ -55,6 +55,80 @@ def login(url, driver, permit, central_user, central_pass):
 
     print("successfully logged in")
 
+    searchcheck = WebDriverWait(driver, '45').until(
+        EC.presence_of_element_located((By.XPATH, "//div[@id='RadWindowWrapper_rwGlobalSearch']"))
+        )
+    time.sleep(7.5)
+    if searchcheck.is_displayed():
+        with zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip", 'r') as zin:
+            with zin.open(permit + " Information.csv") as infofile:
+                inforeader = pd.read_csv(infofile)
+                infoData = pd.DataFrame(inforeader)
+            parcel = str(infoData.at[0, 'Parcel ID'])
+            cdesc =infoData.at[0, 'Central Square Description'] 
+            parcel = parcel.zfill(10)
+        central_search.send_keys(Keys.CONTROL + "a")
+        central_search.send_keys(Keys.DELETE)
+        central_search.send_keys(parcel)
+        central_search.send_keys(Keys.ENTER)
+        parcelframe = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, "rwGlobalSearch"))
+                    )
+        driver.switch_to.frame(parcelframe)
+        WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//a[contains(text(),'" + parcel + "')]"))
+            ).click()
+        driver.switch_to.parent_frame()
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, 'FRMLAND'))
+                )
+        driver.switch_to.frame("FRMLAND")
+        time.sleep(3)
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//div[@id='ctl16_C_ctl00_radActionsMenu']/ul/li/a/img"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Add Record')]"))
+                ).click()
+        driver.switch_to.parent_frame()
+        recordframe = WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, 'rw'))
+                )
+        driver.switch_to.frame(recordframe)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboRecType_Input']"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'Permit linked to this record')]"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboType_Input']"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + permtype + "')]"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboSubType_Input']"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + permsubtype + "')]"))
+                ).click()
+        time.sleep(1)
+        recorddesc = WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_txtDesc']"))
+                )
+        recorddesc.send_keys(cdesc)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_ImageButton1']"))
+                ).click()
+        driver.switch_to.parent_frame()
+        time.sleep(5)
     WebDriverWait(driver, '45').until(
             EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
             )
@@ -242,6 +316,10 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
     deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
     deleteApp.send_keys(Keys.CONTROL + "a")
     deleteApp.send_keys(Keys.DELETE)
+
+    deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
+    deletePC.send_keys(Keys.CONTROL + "a")
+    deletePC.send_keys(Keys.DELETE)
     
     # Change Description
     descField = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$txtDescription']")
@@ -429,7 +507,7 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
         WebDriverWait(driver, '45').until(
                 EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$imgBtnSaveAllValuationsTop']"))
                 ).click()
-        time.sleep(3)
+        time.sleep(5)
 
 def inputFees(driver, permit, permitFileLocation):
     WebDriverWait(driver, '45').until(
@@ -559,6 +637,7 @@ def inputFees(driver, permit, permitFileLocation):
             siblingFeeInput.send_keys(Keys.DELETE)
             siblingFeeInput.send_keys(data[i][1])                    
         driver.switch_to.parent_frame()
+        time.sleep(2)
         WebDriverWait(driver, '45').until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)"))
                 ).click()
@@ -817,7 +896,7 @@ def inputAttach(driver, permit, permitFileLocation):
         time.sleep(2)
 
 def transfer(url, driver, permit, permitFileLocation, central_user, central_pass, permtype, permsubtype, needDesc, needFees, needIns, needPR, needAttach):
-    login(url, driver, permit, central_user, central_pass)
+    login(url, driver, permit, central_user, central_pass, permitFileLocation, permtype, permsubtype)
     if needPR:
         status = WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
@@ -839,6 +918,9 @@ def transfer(url, driver, permit, permitFileLocation, central_user, central_pass
             deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
             deleteApp.send_keys(Keys.CONTROL + "a")
             deleteApp.send_keys(Keys.DELETE)
+            deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
+            deletePC.send_keys(Keys.CONTROL + "a")
+            deletePC.send_keys(Keys.DELETE)
             save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
             save.click()
 
