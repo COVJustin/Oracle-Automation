@@ -129,12 +129,150 @@ def login(url, driver, permit, central_user, central_pass, permitFileLocation, p
                 EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_ImageButton1']"))
                 ).click()
         driver.switch_to.parent_frame()
-        time.sleep(5)
-    WebDriverWait(driver, '45').until(
+        WebDriverWait(driver, '45').until(
             EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
             )
-    driver.switch_to.frame("FRMPERMIT")
-
+        driver.switch_to.frame("FRMPERMIT")
+        time.sleep(5)
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
+                )
+        feerows = driver.find_elements(By.XPATH, "//table[@id='ctl12_C_ctl00_rGridFees_ctl00']/tbody/tr")
+        feecount = 0
+        if len(feerows) > 1:
+            feecount = int(len(feerows) / 2)
+        for i in range(feecount):
+            feerow = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//div[@id='ctl12_C_ctl00_rGridFees_ctl00_ctl04_radParentActionsMenu']/ul/li/a/img"))
+                        )
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'})", feerow)
+            feerow.click()
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                        EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Delete Item')]"))
+                        ).click()
+            driver.switch_to.parent_frame()
+            voidframe = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.NAME, "rw"))
+                        )
+            driver.switch_to.frame(voidframe)
+            WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                        ).click()
+            driver.switch_to.parent_frame()
+            infloadcheck(driver)
+        inspcount = driver.find_elements(By.CLASS_NAME, "Inspections-ListItem")
+        for i in range(len(inspcount)):
+            insprow = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//div[@id='ctl14_C_ctl00_rlvInspections_ctrl0_radInspectionsMenu']/ul/li/a/img"))
+                        )
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'})", insprow)
+            insprow.click()
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                        EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Void Inspection')]"))
+                        ).click()
+            driver.switch_to.parent_frame()
+            voidframe = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.NAME, "rw"))
+                        )
+            driver.switch_to.frame(voidframe)
+            WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                        ).click()
+            driver.switch_to.parent_frame()
+            infloadcheck(driver)
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//div[@id='ctl14_C_ctl00_rlvInspections_ctrl0_radInspectionsMenu']/ul/li/a/img"))
+                    ).click()
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Delete Inspection')]"))
+                    ).click()
+            driver.switch_to.parent_frame()
+            voidframe = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.NAME, "rw"))
+                        )
+            driver.switch_to.frame(voidframe)
+            WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                        ).click()
+            driver.switch_to.parent_frame()
+            infloadcheck(driver)
+        reviewcount = driver.find_elements(By.CLASS_NAME, "Reviews-ListItem")
+        for i in range(len(reviewcount)):
+            revrow = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//div[@id='ctl15_C_ctl00_rlvReviews_ctrl0_radReviewsMenu']/ul/li/a/img"))
+                        )
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'})", revrow)
+            revrow.click()
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                        EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Void Review')]"))
+                        ).click()
+            driver.switch_to.parent_frame()
+            voidframe = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.NAME, "rw"))
+                        )
+            driver.switch_to.frame(voidframe)
+            WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                        ).click()
+            driver.switch_to.parent_frame()
+            infloadcheck(driver)
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//div[@id='ctl15_C_ctl00_rlvReviews_ctrl0_radReviewsMenu']/ul/li/a/img"))
+                    ).click()
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Delete Review')]"))
+                    ).click()
+            driver.switch_to.parent_frame()
+            voidframe = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.NAME, "rw"))
+                        )
+            driver.switch_to.frame(voidframe)
+            WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                        ).click()
+            driver.switch_to.parent_frame()
+            infloadcheck(driver)
+    driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+    try:
+        WebDriverWait(driver, '5').until(
+                EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                )
+        driver.switch_to.frame("FRMPERMIT")
+    except TimeoutException:
+        ""
+            
+def infloadcheck(driver):
+    try:
+        time.sleep(2)
+        WebDriverWait(driver, '10').until(
+                EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                )
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                )
+        driver.switch_to.frame("FRMPERMIT")
+        time.sleep(2)
+    except TimeoutException:
+        driver.refresh()
+        WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="txtSearch"]'))
+            )
+        WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//span[contains(.,'Permitting')]"))
+            ).click()
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                )
+        driver.switch_to.frame("FRMPERMIT")
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
+                )
+        time.sleep(2)
 def inputPR(driver, permit, permitFileLocation):
     z = zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip")
     if (permit + " Reviews.csv") in z.namelist():
@@ -665,6 +803,7 @@ def inputFees(driver, permit, permitFileLocation, permtype, permsubtype):
                     WebDriverWait(driver, '45').until(
                             EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
                             )
+                    time.sleep(2)
                     WebDriverWait(driver, '45').until(
                         EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnAddFees']"))
                         )
