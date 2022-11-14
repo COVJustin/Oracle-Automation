@@ -1042,7 +1042,7 @@ def inputIns(driver, permit, permitFileLocation):
         time.sleep(2)
         insResultDic = {"": "",
                         "APPROVED": "APPROVED",
-                        "NOT APPROVED": " NOT APPROVED",
+                        "NOT APPROVED": "NOT APPROVED",
                         "CORRECTIONS": "CORRECTIONS",
                         "RECHEDULED": "CANCELED",
                         "RESCHEDULED": "CANCELED",
