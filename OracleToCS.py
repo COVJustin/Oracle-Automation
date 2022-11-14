@@ -9,6 +9,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException, TimeoutException
 from datetime import datetime as dt
+from datetime import timedelta
+import re
 import io
 import zipfile
 import math
@@ -263,10 +265,14 @@ def infloadcheck(driver):
             EC.presence_of_element_located((By.XPATH, '//*[@id="txtSearch"]'))
             )
         WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.XPATH, "//span[contains(.,'Permitting')]"))
-            ).click()
+                EC.element_to_be_clickable((By.XPATH, "//div[@id='divIconWrapperPermit']"))
+                ).click()
+        time.sleep(2)
         WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                )
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
                 )
         driver.switch_to.frame("FRMPERMIT")
         WebDriverWait(driver, '45').until(
@@ -424,6 +430,47 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
                 valuation = infoData.at[0, 'Valuation']
     driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
     time.sleep(2)
+    subtypeexist = WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblPermitSubTypeNoEdit']"))
+            ).text
+    if subtypeexist == " " and permsubtype != "" and permtype != "":
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//div[@id='ctl09_C_ctl00_radActionsMenu']/ul/li/a/img"))
+                ).click()
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Edit Type/Subtype')]"))
+                ).click()
+        driver.switch_to.parent_frame()
+        typeinner = WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, 'rw'))
+                )
+        driver.switch_to.frame(typeinner)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboType_Input']"))
+                ).click()
+        time.sleep(2)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ permtype +"')]"))
+                ).click()
+        time.sleep(1)
+        if permsubtype != "":
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboSubType_Input']"))
+                    ).click()
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ permsubtype +"')]"))
+                    ).click()
+            time.sleep(1)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_btnPreSave']"))
+                ).click()
+        driver.switch_to.parent_frame()
+        WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+            )
+        driver.switch_to.frame("FRMPERMIT")
+        time.sleep(2)
     WebDriverWait(driver, '45').until(
             EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
             ).click()
@@ -433,10 +480,40 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
             EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
             ).click()
     time.sleep(1)
-    WebDriverWait(driver, '45').until(
-            EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+    try:
+        WebDriverWait(driver, '5').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                ).click()
+    except TimeoutException:
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl09_C_ctl00_btnRevert']"))
+                ).click()
+        time.sleep(3)
+        driver.switch_to.parent_frame()
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//div[@id='divIconWrapperPermit']"))
+                ).click()
+        time.sleep(2)
+        WebDriverWait(driver, '45').until(
+                EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                )
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
+                )
+        driver.switch_to.frame("FRMPERMIT")
+        WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+            )
+        WebDriverWait(driver, '45').until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
             ).click()
-    
+        WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+            ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '5').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                ).click()
     # Change Dates 
     applyDateField = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$calAppliedDate$dateInput']")
     applyDateField.send_keys(Keys.CONTROL + "a")
@@ -519,46 +596,6 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
     WebDriverWait(driver, '45').until(
             EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
             )
-    subtypeexist = WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblPermitSubTypeNoEdit']"))
-            ).text
-    if subtypeexist == " " and permsubtype != "" and permtype != "":
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//div[@id='ctl09_C_ctl00_radActionsMenu']/ul/li/a/img"))
-                ).click()
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Edit Type/Subtype')]"))
-                ).click()
-        driver.switch_to.parent_frame()
-        typeinner = WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.NAME, 'rw'))
-                )
-        driver.switch_to.frame(typeinner)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboType_Input']"))
-                ).click()
-        time.sleep(2)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ permtype +"')]"))
-                ).click()
-        time.sleep(1)
-        if permsubtype != "":
-            WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboSubType_Input']"))
-                    ).click()
-            time.sleep(2)
-            WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ permsubtype +"')]"))
-                    ).click()
-            time.sleep(1)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_btnPreSave']"))
-                ).click()
-        driver.switch_to.parent_frame()
-        WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-            )
-        driver.switch_to.frame("FRMPERMIT")
     applicantexist = WebDriverWait(driver, '45').until(
             EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblApplicantNameNoEdit']"))
             ).text
@@ -976,142 +1013,226 @@ def inputFees(driver, permit, permitFileLocation, permtype, permsubtype):
                 WebDriverWait(driver, '45').until(
                         EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
                         )
-
+            time.sleep(5)
     
-def inputIns(driver, permit, permitFileLocation):               
-   with zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip", 'r') as zin:
-            with zin.open(permit + " Inspection.csv") as insfile:
-                insreader = pd.read_csv(insfile)
-                insData = pd.DataFrame(insreader)
-                for row in range(len(insData)):
-                        WebDriverWait(driver, '20').until(
-                                EC.presence_of_element_located((By.XPATH, '//*[@id="ctl14_C_ctl00_btnAddInspection"]'))
-                                ).click()
-                        time.sleep(3)
-                        driver.switch_to.parent_frame()
-                        innerframe = driver.find_element(By.NAME,'rw')
-                        driver.switch_to.frame(innerframe)
+def inputIns(driver, permit, permitFileLocation):
+    z = zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip")
+    if (permit + " Inspection.csv") in z.namelist():
+        with zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip", 'r') as zin:
+            f = io.StringIO(zin.read(permit + " Inspection.csv").decode('utf-8'))
+            reader = csv.reader(f)
+            insData = list(reader)
+        insData.pop(0)
+        premadeinspectioncount = driver.find_elements(By.CLASS_NAME, "Inspections-ListItem")
+        pmarray = []
+        for i in range(len(premadeinspectioncount)):
+            pminstype = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//span[@id='ctl14_C_ctl00_rlvInspections_ctrl" + str(i) + "_lblInspectionType']"))
+                        ).text
+            pmres = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//span[@id='ctl14_C_ctl00_rlvInspections_ctrl" + str(i) + "_lblResult']/span[2]"))
+                        ).text
+            pmsch = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//span[@id='ctl14_C_ctl00_rlvInspections_ctrl" + str(i) + "_lblScheduledDate']/span[2]"))
+                        ).text
+            pm = pminstype[:17] + pmres + pmsch
+            pmarray.append(pm)
+        editcounter = 0
+        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+        time.sleep(2)
+        insResultDic = {"": "",
+                        "APPROVED": "APPROVED",
+                        "NOT APPROVED": " NOT APPROVED",
+                        "CORRECTIONS": "CORRECTIONS",
+                        "RECHEDULED": "CANCELED",
+                        "RESCHEDULED": "CANCELED",
+                        "FINAL": "FINAL",
+                        "NOT READY": "NOT READY",
+                        "PARTIAL-NOTES": "PARTIAL",
+                        "FOLLOW UP": "FOLLOW-UP",
+                        "NEED ACCESS": "CANT GAIN ACCESS",
+                        "PRE-FINAL APPR": "FINAL",
+                        "PARTIAL": "PARTIAL",
+                        "STOP WORK": "STOP WORK",
+                        "POSTED NOTICE": "POSTED TAG",
+                        "CORRECTION": "CORRECTIONS",
+                        "CONDITIONS": "CONDITIONS",
+                        "NO ACCESS": "CANT GAIN ACCESS",
+                        "COMPLIANT": "APPROVED",
+                        "NOV": "VIOLATION",
+                        "INCOMPLETE": "CORRECTIONS",
+                        "NOT NOTIFIED": "NOT READY",
+                        "DEFICIENT": "CORRECTIONS",
+                        "NON-STANDARD": "FAILED",
+                        "WARNING/ NOTICE": "POSTED TAG",
+                        "POSTPONED": "CANCELLED"
+        }             
+        for row in range(len(insData)):
+            tempstatus = insData[row][2].upper()
+            if tempstatus != "CANCELED" and tempstatus != "PENDING":
+                tempstatus = insData[row][17].upper()
+            sch = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', insData[row][15])
+            if len(sch) > 0:
+                tempsch = sch[0][:-2] + "20" + sch[0][-2:]
+            else:
+                tempsch = "(mm/dd/yy)"
+            if (insData[row][1][:17] + tempstatus + tempsch) not in pmarray:
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl14_C_ctl00_btnAddInspection"]'))
+                        ).click()
+                time.sleep(3)
+                driver.switch_to.parent_frame()
+                innerframe = driver.find_element(By.NAME,'rw')
+                driver.switch_to.frame(innerframe)
 
-                        inspect = insData.at[row, 'Inspector']
-                        scheduleDate = insData.at[row, 'Scheduled']
-                        setDate = "Specified"
-                        scheduleTime = "8"
-                        completeDate = insData.at[row, 'Completed']
-                        completeTime = "1"
-                        result = insData.at[row, 'Result']
-                        comments = insData.at[row, 'Comments']
-                        editBtn = 0
+                inspect = insData[row][14].upper()
+                sd = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', insData[row][15])
+                scheduleDate = ""
+                if len(sd) > 0:
+                    scheduleDate = sd[0]
+                st = re.findall('\d{1,2}[:]\d{2}', insData[row][15])
+                scheduleTime = ""
+                if len(st) > 0:
+                    scheduleTime = st[0]
+                    scheduleTime = dt.strptime(scheduleTime, "%H:%M")
+                    scheduleTime = scheduleTime + (dt.min - scheduleTime) % timedelta(minutes=30)
+                    if scheduleTime > dt.strptime("17:00", "%H:%M"):
+                        scheduleTime = dt.strptime("17:00", "%H:%M")
+                    elif scheduleTime < dt.strptime("7:00", "%H:%M"):
+                        scheduleTime = dt.strptime("7:00", "%H:%M")
+                    scheduleTime = scheduleTime.strftime("%I:%M %p")
+                    if scheduleTime[0] == "0":
+                        scheduleTime = scheduleTime[1:]
+                cd = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', insData[row][16])
+                completeDate = ""
+                if len(cd) > 0:
+                    completeDate = cd[0]
+                ct = re.findall('\d{1,2}[:]\d{2}', insData[row][16])
+                completeTime = ""
+                if len(ct) > 0:
+                    completeTime = ct[0]
+                    completeTime = dt.strptime(completeTime, "%H:%M")
+                    completeTime = completeTime + (dt.min - completeTime) % timedelta(minutes=30)
+                    if completeTime > dt.strptime("17:00", "%H:%M"):
+                        completeTime = dt.strptime("17:00", "%H:%M")
+                    elif completeTime < dt.strptime("7:00", "%H:%M"):
+                        completeTime = dt.strptime("7:00", "%H:%M")
+                    completeTime = completeTime.strftime("%I:%M %p")
+                    if completeTime[0] == "0":
+                        completeTime = completeTime[1:]
+                result = insData[row][17].upper()
+                comments = insData[row][20]
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddInspector_Input"]'))
+                        ).click()
+                try:
+                    time.sleep(2.5)
+                    driver.find_element(By.XPATH, "//li[contains(.,'"+ inspect +"')]").click()
+                except NoSuchElementException:
+                    if (permit.startswith("PW")):
+                        WebDriverWait(driver, '20').until(
+                            EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'PUBLIC WORKS INSPECTIONS BUCKET')]"))
+                            ).click()
+                    else:
+                        WebDriverWait(driver, '20').until(
+                            EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'BUILDING INSPECTIONS BUCKET')]"))
+                            ).click()
+                time.sleep(2)
+                scheduled = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$calScheduledDate$dateInput']"))
+                        )
+                scheduled.send_keys(Keys.CONTROL + "a")
+                scheduled.send_keys(Keys.DELETE)
+                scheduled.send_keys(scheduleDate)
 
-                        WebDriverWait(driver, '20').until(
-                                EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddInspector_Input"]'))
-                                ).click()
-                        time.sleep(2.5)
-                        try:
-                                inspector = WebDriverWait(driver, '20').until(
-                                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ inspect +"')]"))
-                                )
-                                inspector.click()
-                        except ElementClickInterceptedException:
-                                time.sleep(2.5)
-                                try:
-                                        inspector = WebDriverWait(driver, '20').until(
-                                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddInspector_Input"]'))
-                                        )
-                                        try: 
-                                                inspector.click()
-                                        except (ElementClickInterceptedException, ElementNotInteractableException):
-                                                print("2nd attempt not interactible")
-                                except ElementClickInterceptedException:
-                                        print("Error finding element")
-                        time.sleep(2)
-                        defaultDate = setDate[0]
-                        WebDriverWait(driver, '20').until(
-                                EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddSetDefault_Input"]'))
-                                ).send_keys(defaultDate)
-
-                        scheduled = WebDriverWait(driver, '20').until(
-                                EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$calScheduledDate$dateInput']"))
-                                )
-                        scheduled.send_keys(Keys.CONTROL + "a")
-                        scheduled.send_keys(Keys.DELETE)
-                        scheduled.send_keys(scheduleDate)
-
-                        WebDriverWait(driver, '20').until(
-                                EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$ddScheduleTime']"))
-                                ).send_keys(scheduleTime)
-                        
-                        
-                        completed = WebDriverWait(driver, '20').until(
-                                EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$calCompletedDate$dateInput']"))
-                                )
-                        completed.send_keys(completeDate)
-
-                        secondTime = driver.find_element(By.XPATH, "//input[@name = 'ctl08$ddCompletedTime']")
-                        secondTime.send_keys(completeTime)
-
-                        WebDriverWait(driver, '20').until(
-                                EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddResult_Input"]'))
-                                ).click()
-                        time.sleep(1.5)
-                        WebDriverWait(driver, '20').until(
-                                EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddResult_Input"]'))
-                                ).click()
-                        canceled = insData.at[row, 'Status']
-                        if canceled == "CANCELED":
-                                WebDriverWait(driver, '20').until(
-                                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ canceled +"')]"))
-                                ).click()
-                        else:
-                                WebDriverWait(driver, '20').until(
-                                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ result +"')]"))
-                                ).click()
-                                
-                        driver.find_element(By. XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/div/span[2]').click()
-                        time.sleep(1)
-                        WebDriverWait(driver, '20').until(
-                                EC.element_to_be_clickable((By.XPATH, "//span[text()='" + insData.at[row, 'Inspection'] + "']"))
-                                ).click()
-                        time.sleep(2)
-                        WebDriverWait(driver, '45').until(
-                                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_btnSave"]'))
-                                        ).click()
-                        driver.switch_to.parent_frame()
-                        WebDriverWait(driver, '45').until(
-                                EC.presence_of_element_located((By.XPATH, '//*[@id="modalPage"]/div[2]/div/div/table/tbody/tr/td/img[1]'))
-                                ).click()
-                        time.sleep(3)
-                        WebDriverWait(driver, '45').until(
-                                EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
-                                )
-                        WebDriverWait(driver, '45').until(
-                                EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
-                                )
-                        driver.switch_to.frame("FRMPERMIT")
-                        time.sleep(1)
-                        WebDriverWait(driver, '45').until(
-                                        EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl14$C$ctl00$rlvInspections$ctrl"+str(editBtn)+"$btnEdit']"))
-                                        ).click()
-                        driver.switch_to.parent_frame()
-                        innerframe = driver.find_element(By.NAME,'rw')
-                        driver.switch_to.frame(innerframe)
-                        WebDriverWait(driver, '20').until(
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$ddScheduleTime']"))
+                        ).click()
+                time.sleep(2)
+                WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + scheduleTime + "')]"))
+                        ).click()
+                time.sleep(2)
+                completed = WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$calCompletedDate$dateInput']"))
+                        )
+                completed.send_keys(completeDate)
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$ddCompletedTime']"))
+                        ).click()
+                time.sleep(2)
+                WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + completeTime + "')]"))
+                        ).click()
+                time.sleep(2)
+                WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddResult_Input"]'))
+                        ).click()
+                time.sleep(2)
+                WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, '//*[@id="ctl08_ddResult_Input"]'))
+                        ).click()
+                canceled = insData[row][2].upper()
+                if canceled == "CANCELED" or canceled == "PENDING":
+                    WebDriverWait(driver, '20').until(
+                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ canceled +"')]"))
+                    ).click()
+                    time.sleep(2)
+                else:
+                    WebDriverWait(driver, '20').until(
+                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ insResultDic[result] +"')]"))
+                    ).click()
+                    time.sleep(2)
+                driver.find_element(By. XPATH, '//*[@id="ctl08_treeInspections"]/ul/li[1]/div/span[2]').click()
+                time.sleep(1)
+                WebDriverWait(driver, '20').until(
+                        EC.element_to_be_clickable((By.XPATH, "//span[text()='" + insData[row][1] + "']"))
+                        ).click()
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_btnSave"]'))
+                        ).click()
+                time.sleep(1)
+                driver.switch_to.parent_frame()
+                try:
+                    WebDriverWait(driver, '5').until(
+                            EC.presence_of_element_located((By.XPATH, '//*[@id="modalPage"]/div[2]/div/div/table/tbody/tr/td/img[1]'))
+                            ).click()
+                    time.sleep(3)
+                except TimeoutException:
+                    ""
+                WebDriverWait(driver, '45').until(
+                        EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                        )
+                WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
+                        )
+                driver.switch_to.frame("FRMPERMIT")
+                time.sleep(1)
+                if comments != "":
+                    WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id = 'ctl14_C_ctl00_rlvInspections_ctrl" + str(len(premadeinspectioncount) + editcounter) +"_btnEdit']"))
+                            ).click()
+                    editcounter += 1
+                    driver.switch_to.parent_frame()
+                    innerframe = driver.find_element(By.NAME,'rw')
+                    driver.switch_to.frame(innerframe)
+                    WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ctrlNotes_txtNoteSave"]'))
                         ).send_keys(comments)
-                        time.sleep(1)
-                        
-                        WebDriverWait(driver, '45').until(
-                                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_btnSave"]'))
-                                        ).click()
-                        driver.switch_to.parent_frame()
-                        time.sleep(2)
-                        WebDriverWait(driver, '45').until(
-                                EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
-                                )
-                        WebDriverWait(driver, '45').until(
-                                EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
-                                )
-                        driver.switch_to.frame("FRMPERMIT")
-                        editBtn +1
+                    time.sleep(1)
+                    WebDriverWait(driver, '45').until(
+                                    EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_btnSave"]'))
+                                    ).click()
+                    driver.switch_to.parent_frame()
+                    time.sleep(2)
+                    WebDriverWait(driver, '45').until(
+                            EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                            )
+                    WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
+                            )
+                    driver.switch_to.frame("FRMPERMIT")
 
 def inputAttach(driver, permit, permitFileLocation):
     z = zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip")
@@ -1182,10 +1303,10 @@ def inputAttach(driver, permit, permitFileLocation):
 
 def transfer(url, driver, permit, permitFileLocation, central_user, central_pass, permtype, permsubtype, needDesc, needFees, needIns, needPR, needAttach):
     login(url, driver, permit, central_user, central_pass, permitFileLocation, permtype, permsubtype)
+    status = WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
+            ).text
     if needPR:
-        status = WebDriverWait(driver, '45').until(
-                    EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
-                    ).text
         inputPR(driver, permit, permitFileLocation)
         if needDesc == False:
             driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
@@ -1208,34 +1329,46 @@ def transfer(url, driver, permit, permitFileLocation, central_user, central_pass
             deletePC.send_keys(Keys.DELETE)
             save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
             save.click()
-
             time.sleep(5)
-            driver.switch_to.parent_frame()
-            try:
-                driver.find_element(By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)").click()
-            except NoSuchElementException:
-                print("Valid date")
-            try:
-                time.sleep(5)
-                innerframe3 = driver.find_element(By.NAME, 'rwEvents')
-                driver.switch_to.frame(innerframe3)
-                driver.find_element(By.XPATH, "//input[@id='btnNo0']").click()
-                WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//input[@id='btnClose']"))
-                    ).click()
-                driver.switch_to.parent_frame()
-            except NoSuchElementException:
-                print("Valid expiration")
-            WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-                )
-            driver.switch_to.frame("FRMPERMIT")
     if needDesc:
         inputDesc(driver, permit, permitFileLocation, permtype, permsubtype)
+        status = WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
+            ).text
+    if needIns:
+        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+        time.sleep(2)
+        WebDriverWait(driver, '45').until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+            ).click()
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '5').until(
+            EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'PLAN CHECK')]"))
+            ).click()
+        save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+        save.click()
+        time.sleep(5)
+        inputIns(driver, permit, permitFileLocation)
+        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+        time.sleep(2)
+        WebDriverWait(driver, '45').until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+            ).click()
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                ).click()
+        save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+        save.click()
+        time.sleep(5)
     if needAttach:
         inputAttach(driver, permit, permitFileLocation)
-    if needIns:
-        inputIns(driver, permit, permitFileLocation)
     if needFees:
         inputFees(driver, permit, permitFileLocation, permtype, permsubtype)
     print('program finished')
