@@ -470,7 +470,10 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
             EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
             )
         driver.switch_to.frame("FRMPERMIT")
-        time.sleep(2)
+    WebDriverWait(driver, '45').until(
+            EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+            )
+    time.sleep(2)
     WebDriverWait(driver, '45').until(
             EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
             ).click()
@@ -679,7 +682,7 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
                     EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
                     )
             driver.switch_to.frame("FRMPERMIT")
-            time.sleep(1)
+            time.sleep(3)
             valField = WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$rGridValuations$ctl00$ctl04$txtParentQty']"))
                     )
@@ -1344,10 +1347,42 @@ def transfer(url, driver, permit, permitFileLocation, central_user, central_pass
         WebDriverWait(driver, '45').until(
                 EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
                 ).click()
-        time.sleep(1)
-        WebDriverWait(driver, '5').until(
-            EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'PLAN CHECK')]"))
-            ).click()
+        try:
+            time.sleep(1)
+            WebDriverWait(driver, '5').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'PLAN CHECK')]"))
+                ).click()
+        except TimeoutException:
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl09_C_ctl00_btnRevert']"))
+                ).click()
+            time.sleep(3)
+            driver.switch_to.parent_frame()
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//div[@id='divIconWrapperPermit']"))
+                    ).click()
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                    EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                    )
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
+                    )
+            driver.switch_to.frame("FRMPERMIT")
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+                )
+            WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+                ).click()
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                ).click()
+            time.sleep(1)
+            WebDriverWait(driver, '5').until(
+                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'PLAN CHECK')]"))
+                    ).click()
+            time.sleep(1)
         save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
         save.click()
         time.sleep(5)
