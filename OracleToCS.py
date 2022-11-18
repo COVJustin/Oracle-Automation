@@ -29,7 +29,7 @@ def driver_setup():
     return driver
 
 # function to log into Central Square & Oracle and search permits
-def login(url, driver, permit, central_user, central_pass, permitFileLocation, permtype, permsubtype):
+def login(url, driver, central_user, central_pass):
     print("logging in to Central Square....")
     driver.get(url)
     driver.maximize_window()
@@ -49,196 +49,220 @@ def login(url, driver, permit, central_user, central_pass, permitFileLocation, p
     password.send_keys(central_pass)
     button.click()
 
-    central_search = WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.XPATH, '//*[@id="txtSearch"]'))
-            ) 
-    central_search.send_keys(permit)
-    central_search.send_keys(Keys.ENTER)
-
     print("successfully logged in")
 
+def permexist(driver, permit, permitFileLocation, permtype, permsubtype):
+    central_search = WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="txtSearch"]'))
+            )
+    central_search.send_keys(Keys.CONTROL + "a")
+    central_search.send_keys(Keys.DELETE)
+    central_search.send_keys(permit)
+    central_search.send_keys(Keys.ENTER)
     searchcheck = WebDriverWait(driver, '45').until(
         EC.presence_of_element_located((By.XPATH, "//div[@id='RadWindowWrapper_rwGlobalSearch']"))
         )
     time.sleep(10)
     if searchcheck.is_displayed():
-        with zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip", 'r') as zin:
-            with zin.open(permit + " Information.csv") as infofile:
-                inforeader = pd.read_csv(infofile)
-                infoData = pd.DataFrame(inforeader)
-            parcel = str(infoData.at[0, 'Parcel ID'])
-            cdesc =infoData.at[0, 'Central Square Description'] 
-            parcel = parcel.zfill(10)
-        central_search.send_keys(Keys.CONTROL + "a")
-        central_search.send_keys(Keys.DELETE)
-        central_search.send_keys(parcel)
-        central_search.send_keys(Keys.ENTER)
-        parcelframe = WebDriverWait(driver, '45').until(
-                    EC.presence_of_element_located((By.NAME, "rwGlobalSearch"))
-                    )
-        driver.switch_to.frame(parcelframe)
-        WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.XPATH, "//a[contains(text(),'" + parcel + "')]"))
-            ).click()
-        driver.switch_to.parent_frame()
-        WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.NAME, 'FRMLAND'))
-                )
-        driver.switch_to.frame("FRMLAND")
-        time.sleep(3)
-        WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.XPATH, "//div[@id='ctl16_C_ctl00_radActionsMenu']/ul/li/a/img"))
-                ).click()
-        time.sleep(1)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Add Record')]"))
-                ).click()
-        driver.switch_to.parent_frame()
-        recordframe = WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.NAME, 'rw'))
-                )
-        driver.switch_to.frame(recordframe)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboRecType_Input']"))
-                ).click()
-        time.sleep(1)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'Permit linked to this record')]"))
-                ).click()
-        time.sleep(2)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboType_Input']"))
-                ).click()
-        time.sleep(1)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + permtype + "')]"))
-                ).click()
-        time.sleep(2)
         try:
-            driver.find_element(By.XPATH, "//input[@id='ctl08_cboSubType_Input']").click()
+            permitframe = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.NAME, "rwGlobalSearch"))
+                        )
+            driver.switch_to.frame(permitframe)
+            driver.find_element(By.XPATH, "//a[contains(text(),'" + permit + "')]").click()
+            driver.switch_to.parent_frame()
+        except NoSuchElementException:
+            driver.switch_to.parent_frame()
+            with zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip", 'r') as zin:
+                with zin.open(permit + " Information.csv") as infofile:
+                    inforeader = pd.read_csv(infofile)
+                    infoData = pd.DataFrame(inforeader)
+                parcel = str(infoData.at[0, 'Parcel ID'])
+                parceladdr = str(infoData.at[0, 'Parcel Address'])
+                cdesc =infoData.at[0, 'Central Square Description'] 
+                parcel = parcel.zfill(10)
+            central_search.send_keys(Keys.CONTROL + "a")
+            central_search.send_keys(Keys.DELETE)
+            central_search.send_keys(parcel)
+            central_search.send_keys(Keys.ENTER)
+            parcelframe = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.NAME, "rwGlobalSearch"))
+                        )
+            driver.switch_to.frame(parcelframe)
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//a[contains(text(),'" + parcel + "')]"))
+                )
+            potparcels = driver.find_elements(By.XPATH, "//a[contains(text(),'" + parcel + "')]")
+            parcelfound = False
+            for potential in potparcels:
+                if parcelfound == False:
+                    potentialparent = potential.find_element(By.XPATH, "../..")
+                    try:
+                        potentialparent.find_element(By.XPATH, ".//td[contains(text(),\"" + parceladdr + "\")]")
+                        potential.click()
+                        parcelfound = True
+                    except NoSuchElementException:
+                        ""
+            if parcelfound == False:
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//a[contains(text(),'" + parcel + "')]"))
+                    ).click()
+            driver.switch_to.parent_frame()
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, 'FRMLAND'))
+                    )
+            driver.switch_to.frame("FRMLAND")
+            time.sleep(3)
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//div[@id='ctl16_C_ctl00_radActionsMenu']/ul/li/a/img"))
+                    ).click()
             time.sleep(1)
             WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + permsubtype + "')]"))
+                    EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Add Record')]"))
+                    ).click()
+            driver.switch_to.parent_frame()
+            recordframe = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, 'rw'))
+                    )
+            driver.switch_to.frame(recordframe)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboRecType_Input']"))
+                    ).click()
+            time.sleep(1)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'Permit linked to this record')]"))
                     ).click()
             time.sleep(2)
-        except NoSuchElementException:
-            ""
-        recorddesc = WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_txtDesc']"))
-                )
-        recorddesc.send_keys(cdesc)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_ImageButton1']"))
-                ).click()
-        driver.switch_to.parent_frame()
-        WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-            )
-        driver.switch_to.frame("FRMPERMIT")
-        time.sleep(5)
-        WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
-                )
-        feerows = driver.find_elements(By.XPATH, "//table[@id='ctl12_C_ctl00_rGridFees_ctl00']/tbody/tr")
-        feecount = 0
-        if len(feerows) > 1:
-            feecount = int(len(feerows) / 2)
-        for i in range(feecount):
-            feerow = WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, "//div[@id='ctl12_C_ctl00_rGridFees_ctl00_ctl04_radParentActionsMenu']/ul/li/a/img"))
-                        )
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'})", feerow)
-            feerow.click()
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_cboType_Input']"))
+                    ).click()
+            time.sleep(1)
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + permtype + "')]"))
+                    ).click()
             time.sleep(2)
-            WebDriverWait(driver, '45').until(
-                        EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Delete Item')]"))
+            try:
+                driver.find_element(By.XPATH, "//input[@id='ctl08_cboSubType_Input']").click()
+                time.sleep(1)
+                WebDriverWait(driver, '45').until(
+                        EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'" + permsubtype + "')]"))
                         ).click()
-            driver.switch_to.parent_frame()
-            voidframe = WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.NAME, "rw"))
-                        )
-            driver.switch_to.frame(voidframe)
+                time.sleep(2)
+            except NoSuchElementException:
+                ""
+            recorddesc = WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_txtDesc']"))
+                    )
+            recorddesc.send_keys(cdesc)
             WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
-                        ).click()
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_ImageButton1']"))
+                    ).click()
             driver.switch_to.parent_frame()
             infloadcheck(driver)
-        inspcount = driver.find_elements(By.CLASS_NAME, "Inspections-ListItem")
-        for i in range(len(inspcount)):
-            insprow = WebDriverWait(driver, '45').until(
+            time.sleep(5)
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
+                    )
+            feerows = driver.find_elements(By.XPATH, "//table[@id='ctl12_C_ctl00_rGridFees_ctl00']/tbody/tr")
+            feecount = 0
+            if len(feerows) > 1:
+                feecount = int(len(feerows) / 2)
+            for i in range(feecount):
+                feerow = WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//div[@id='ctl12_C_ctl00_rGridFees_ctl00_ctl04_radParentActionsMenu']/ul/li/a/img"))
+                            )
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'})", feerow)
+                feerow.click()
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                            EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Delete Item')]"))
+                            ).click()
+                driver.switch_to.parent_frame()
+                voidframe = WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.NAME, "rw"))
+                            )
+                driver.switch_to.frame(voidframe)
+                WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                            ).click()
+                driver.switch_to.parent_frame()
+                infloadcheck(driver)
+            inspcount = driver.find_elements(By.CLASS_NAME, "Inspections-ListItem")
+            for i in range(len(inspcount)):
+                insprow = WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//div[@id='ctl14_C_ctl00_rlvInspections_ctrl0_radInspectionsMenu']/ul/li/a/img"))
+                            )
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'})", insprow)
+                insprow.click()
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                            EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Void Inspection')]"))
+                            ).click()
+                driver.switch_to.parent_frame()
+                voidframe = WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.NAME, "rw"))
+                            )
+                driver.switch_to.frame(voidframe)
+                WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                            ).click()
+                driver.switch_to.parent_frame()
+                infloadcheck(driver)
+                WebDriverWait(driver, '45').until(
                         EC.presence_of_element_located((By.XPATH, "//div[@id='ctl14_C_ctl00_rlvInspections_ctrl0_radInspectionsMenu']/ul/li/a/img"))
-                        )
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'})", insprow)
-            insprow.click()
-            time.sleep(2)
-            WebDriverWait(driver, '45').until(
-                        EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Void Inspection')]"))
                         ).click()
-            driver.switch_to.parent_frame()
-            voidframe = WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.NAME, "rw"))
-                        )
-            driver.switch_to.frame(voidframe)
-            WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                        EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Delete Inspection')]"))
                         ).click()
-            driver.switch_to.parent_frame()
-            infloadcheck(driver)
-            WebDriverWait(driver, '45').until(
-                    EC.presence_of_element_located((By.XPATH, "//div[@id='ctl14_C_ctl00_rlvInspections_ctrl0_radInspectionsMenu']/ul/li/a/img"))
-                    ).click()
-            time.sleep(2)
-            WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Delete Inspection')]"))
-                    ).click()
-            driver.switch_to.parent_frame()
-            voidframe = WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.NAME, "rw"))
-                        )
-            driver.switch_to.frame(voidframe)
-            WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
-                        ).click()
-            driver.switch_to.parent_frame()
-            infloadcheck(driver)
-        reviewcount = driver.find_elements(By.CLASS_NAME, "Reviews-ListItem")
-        for i in range(len(reviewcount)):
-            revrow = WebDriverWait(driver, '45').until(
+                driver.switch_to.parent_frame()
+                voidframe = WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.NAME, "rw"))
+                            )
+                driver.switch_to.frame(voidframe)
+                WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                            ).click()
+                driver.switch_to.parent_frame()
+                infloadcheck(driver)
+            reviewcount = driver.find_elements(By.CLASS_NAME, "Reviews-ListItem")
+            for i in range(len(reviewcount)):
+                revrow = WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//div[@id='ctl15_C_ctl00_rlvReviews_ctrl0_radReviewsMenu']/ul/li/a/img"))
+                            )
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'})", revrow)
+                revrow.click()
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                            EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Void Review')]"))
+                            ).click()
+                driver.switch_to.parent_frame()
+                voidframe = WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.NAME, "rw"))
+                            )
+                driver.switch_to.frame(voidframe)
+                WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                            ).click()
+                driver.switch_to.parent_frame()
+                infloadcheck(driver)
+                WebDriverWait(driver, '45').until(
                         EC.presence_of_element_located((By.XPATH, "//div[@id='ctl15_C_ctl00_rlvReviews_ctrl0_radReviewsMenu']/ul/li/a/img"))
-                        )
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'})", revrow)
-            revrow.click()
-            time.sleep(2)
-            WebDriverWait(driver, '45').until(
-                        EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Void Review')]"))
                         ).click()
-            driver.switch_to.parent_frame()
-            voidframe = WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.NAME, "rw"))
-                        )
-            driver.switch_to.frame(voidframe)
-            WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                        EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Delete Review')]"))
                         ).click()
-            driver.switch_to.parent_frame()
-            infloadcheck(driver)
-            WebDriverWait(driver, '45').until(
-                    EC.presence_of_element_located((By.XPATH, "//div[@id='ctl15_C_ctl00_rlvReviews_ctrl0_radReviewsMenu']/ul/li/a/img"))
-                    ).click()
-            time.sleep(2)
-            WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//span[contains(.,'Delete Review')]"))
-                    ).click()
-            driver.switch_to.parent_frame()
-            voidframe = WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.NAME, "rw"))
-                        )
-            driver.switch_to.frame(voidframe)
-            WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
-                        ).click()
-            driver.switch_to.parent_frame()
-            infloadcheck(driver)
+                driver.switch_to.parent_frame()
+                voidframe = WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.NAME, "rw"))
+                            )
+                driver.switch_to.frame(voidframe)
+                WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
+                            ).click()
+                driver.switch_to.parent_frame()
+                infloadcheck(driver)
     driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
     try:
         WebDriverWait(driver, '5').until(
@@ -711,7 +735,11 @@ def inputFees(driver, permit, permitFileLocation, permtype, permsubtype):
             data.pop(0)
             totalrefund = 0.0
             refundnote = ""
+            paydate = ""
+            dueFees = []
             for i in range(len(data)):
+                if data[i][6] != "":
+                    paydate = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', data[i][6])[0]
                 if data[i][3] == "REFUND":
                     data[i][1].strip(" ")
                     found = False
@@ -734,6 +762,8 @@ def inputFees(driver, permit, permitFileLocation, permtype, permsubtype):
                         totalrefund += float(data[i][1])
                         refundnote += data[i][0].partition(" = ")[0] + ": -" + data[i][1] + "\n"
                         data[i][0] = "DELETE"
+                elif data[i][3] == "DUE":
+                    dueFees.append(data[i][0] + "§" + data[i][1])
             data = [i for i in data if i[0] != "DELETE"]
             keywrds = [item[0] for item in data]
             dupes = {value : [y for y, v in enumerate(keywrds) if value == v] for value in set(keywrds)}
@@ -795,6 +825,7 @@ def inputFees(driver, permit, permitFileLocation, permtype, permsubtype):
                             EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
                             )
                     driver.switch_to.frame("FRMPERMIT")
+                time.sleep(2)
                 WebDriverWait(driver, '45').until(
                         EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl12$C$ctl00$imgBtnCancelEditAllFeesBottom']"))
                         ).click()
@@ -985,6 +1016,7 @@ def inputFees(driver, permit, permitFileLocation, permtype, permsubtype):
                     EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
                     )
             if totalrefund > 0:
+                time.sleep(2)
                 refundnote = "TOTAL REFUND AMOUNT: " + str(totalrefund) + "\n\nREFUND BREAKDOWN:\n" + refundnote
                 WebDriverWait(driver, '45').until(
                     EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl16_C_ctl00_btnAddAction']"))
@@ -1017,6 +1049,97 @@ def inputFees(driver, permit, permitFileLocation, permtype, permsubtype):
                         EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
                         )
             time.sleep(5)
+            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl12_C_ctl00_imgBtnPayFees']"))
+                    ).click()
+            driver.switch_to.parent_frame()
+            payout = WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.NAME, 'rw'))
+                )
+            driver.switch_to.frame(payout)
+            time.sleep(2)
+            if len(dueFees) > 0:
+                for due in dueFees:
+                    foundMatch = False
+                    tempArr = due.split("§")
+                    temparrfee = tempArr[0].partition(' = ')[0]
+                    potDues = driver.find_elements(By.XPATH, "//span[contains(.,'" + temparrfee + "')]/../..")
+                    for potential in potDues:
+                        if foundMatch == False:
+                            potentialamount = WebDriverWait(potential, '45').until(
+                                EC.presence_of_element_located((By.XPATH, ".//span[contains(.,'$')]"))
+                                ).text
+                            if float(potentialamount[1:].replace(",","")) == float(tempArr[1]):
+                                WebDriverWait(potential, '45').until(
+                                    EC.presence_of_element_located((By.XPATH, ".//input[@type='image']"))
+                                    ).click()
+                                foundMatch = True
+                                time.sleep(2)
+            time.sleep(2)
+            nextbtn = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_imgBtnNext']"))
+                    )
+            if nextbtn.get_attribute("disabled") == "true":
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_imgBtnCancel']"))
+                    ).click()
+                driver.switch_to.parent_frame()
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                    )
+                driver.switch_to.frame("FRMPERMIT")
+            else:
+                nextbtn.click()
+                time.sleep(3)
+                finalpayout = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, 'FRMPAY'))
+                    )
+                driver.switch_to.frame(finalpayout)
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='rcmboPaidBy_Input']"))
+                    ).click()
+                time.sleep(1)
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//div[@id='rcmboPaidBy_DropDown']/div/ul/li"))
+                    ).click()
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='rcmboPayMethod_Input']"))
+                    ).click()
+                time.sleep(1)
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//li[contains(.,'CREDIT CARD')]"))
+                    ).click()
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='txtConfirmationNo']"))
+                    ).send_keys("Paid in Oracle")
+                paydateinput = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='calPaidDate_dateInput']"))
+                    )
+                paydateinput.send_keys(Keys.CONTROL + "a")
+                paydateinput.send_keys(Keys.DELETE)
+                paydateinput.send_keys(paydate)
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='imgBtnPaySupport']"))
+                    ).click()
+                time.sleep(3)
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@id='btnClose']"))
+                    ).click()
+                driver.switch_to.parent_frame()
+                driver.switch_to.parent_frame()
+                WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
+                    )
+                driver.switch_to.frame("FRMPERMIT")
+                time.sleep(5)
+                driver.switch_to.window(driver.window_handles[1])
+                driver.close()
+                driver.switch_to.window(driver.window_handles[0])
+            time.sleep(5)
     
 def inputIns(driver, permit, permitFileLocation):
     z = zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip")
@@ -1041,8 +1164,56 @@ def inputIns(driver, permit, permitFileLocation):
             pm = pminstype[:17] + pmres + pmsch
             pmarray.append(pm)
         editcounter = 0
+        status = WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
+                ).text
         driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
         time.sleep(2)
+        WebDriverWait(driver, '45').until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+            ).click()
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                ).click()
+        try:
+            time.sleep(1)
+            WebDriverWait(driver, '5').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'PLAN CHECK')]"))
+                ).click()
+        except TimeoutException:
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl09_C_ctl00_btnRevert']"))
+                ).click()
+            time.sleep(3)
+            driver.switch_to.parent_frame()
+            WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//div[@id='divIconWrapperPermit']"))
+                    ).click()
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                    EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                    )
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
+                    )
+            driver.switch_to.frame("FRMPERMIT")
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+                )
+            WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+                ).click()
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                ).click()
+            time.sleep(1)
+            WebDriverWait(driver, '5').until(
+                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'PLAN CHECK')]"))
+                    ).click()
+            time.sleep(1)
+        save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+        save.click()
+        time.sleep(5)
         insResultDic = {"": "",
                         "APPROVED": "APPROVED",
                         "NOT APPROVED": "NOT APPROVED",
@@ -1236,6 +1407,21 @@ def inputIns(driver, permit, permitFileLocation):
                             EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
                             )
                     driver.switch_to.frame("FRMPERMIT")
+        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+        time.sleep(2)
+        WebDriverWait(driver, '45').until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+            ).click()
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                ).click()
+        save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+        save.click()
+        time.sleep(5)
 
 def inputAttach(driver, permit, permitFileLocation):
     z = zipfile.ZipFile(permitFileLocation + "/" + permit + ".zip")
@@ -1305,107 +1491,158 @@ def inputAttach(driver, permit, permitFileLocation):
         time.sleep(2)
 
 def transfer(url, driver, permit, permitFileLocation, central_user, central_pass, permtype, permsubtype, needDesc, needFees, needIns, needPR, needAttach):
-    login(url, driver, permit, central_user, central_pass, permitFileLocation, permtype, permsubtype)
-    status = WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
-            ).text
-    if needPR:
-        inputPR(driver, permit, permitFileLocation)
-        if needDesc == False:
-            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
-            time.sleep(2)
-            WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
-                ).click()
-            WebDriverWait(driver, '45').until(
-                    EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
-                    ).click()
-            time.sleep(1)
-            WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
-                    ).click()
-            deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
-            deleteApp.send_keys(Keys.CONTROL + "a")
-            deleteApp.send_keys(Keys.DELETE)
-            deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
-            deletePC.send_keys(Keys.CONTROL + "a")
-            deletePC.send_keys(Keys.DELETE)
-            save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
-            save.click()
-            time.sleep(5)
-    if needDesc:
-        inputDesc(driver, permit, permitFileLocation, permtype, permsubtype)
+    if os.path.exists(permit):
+        with open(permit, "r") as permfile:
+            permlines = permfile.readlines()
+        permlines = (i.strip() for i in permlines)
+        login(url, driver, central_user, central_pass)
+        reset = 0
+        for p in permlines:
+            with open(permitFileLocation + "/00 Checked Permits.txt", "r") as checkfile:
+                checklines = checkfile.readlines()
+            checklines = (i.strip() for i in checklines)
+            if p not in checklines:
+                if reset == 15:
+                    driver.close()
+                    driver = driver_setup()
+                    login(url, driver, central_user, central_pass)
+                    reset = 0
+                with zipfile.ZipFile(permitFileLocation + "/" + p + ".zip", 'r') as zin:
+                    with zin.open(p + " Information.csv") as infofile:
+                        inforeader = pd.read_csv(infofile)
+                        infoData = pd.DataFrame(inforeader)
+                if p.startswith("BP"):
+                    rvc = infoData.at[0, "Residential/Commercial"]
+                    if rvc == "RESIDENTIAL":
+                        pt = "SINGLE FAMILY RESIDENTIAL"
+                        pst = "ALTERATION/REMODEL"
+                    else:
+                        pt = "BUILDING COMMERCIAL"
+                        pst = "ALTERATION/REMODEL"
+                elif p.startswith("EL"):
+                    rvc = infoData.at[0, "Residential/Commercial"]
+                    if rvc == "RESIDENTIAL":
+                        pt = "ELECTRICAL RESIDENTIAL"
+                        pst = "UP TO 324A"
+                    else:
+                        pt = "ELECTRICAL COMMERCIAL"
+                        pst = "UP TO 324A"
+                elif p.startswith("ME"):
+                    rvc = infoData.at[0, "Residential/Commercial"]
+                    if rvc == "RESIDENTIAL":
+                        pt = "MECHANICAL RESIDENTIAL"
+                        pst = "FURNACE AND/OR AC ONLY"
+                    else:
+                        pt = "MECHANICAL COMMERCIAL"
+                        pst = "EQUIPMENT"
+                elif p.startswith("PL"):
+                    rvc = infoData.at[0, "Residential/Commercial"]
+                    if rvc == "RESIDENTIAL":
+                        pt = "PLUMBING RESIDENTIAL"
+                        pst = "WATER HEATER"
+                    else:
+                        pt = "PLUMBING COMMERCIAL"
+                        pst = "WATER HEATER REPLACEMENT"
+                elif p.startswith("PW"):
+                    if infoData.at[0, 'Service Type'] == "ENCROACHMENT":
+                        pt = "ENCROACHMENT"
+                        pst = "Encroachment"
+                    elif infoData.at[0, 'Service Type'] == "EXCAVATION":
+                        pt ="EXCAVATION"
+                        pst = "Utility Planned Proj"
+                    elif infoData.at[0, 'Service Type'] == "ADDRESS CHANGE" or infoData.at[0, 'Service Type'] == "ADDRESS ASSIGNMENT":
+                        pt = "OTHER SERVICES"
+                        pst = "ADDRESS CHG/CRTN"
+                    elif infoData.at[0, 'Service Type'] == "DREDGING" or infoData.at[0, 'Service Type'] == "GRADING":
+                        pt = "GRADING"
+                        pst = "Building Permit PW"
+                    elif infoData.at[0, 'Service Type'] == "FULL ABANDONMENT" or infoData.at[0, 'Service Type'] == "PARTIAL ABANDONMENT":
+                        pt = "ABANDONMENT OF RIGHT"
+                        pst = ""
+                    elif infoData.at[0, 'Service Type'] == "IMPROVEMENT":
+                        pt = "IMPROVEMENT"
+                        pst = "Building Permit PW"
+                    elif infoData.at[0, 'Service Type'] == "SPECIAL EVENTS":
+                        pt = "SPECIAL EVENTS"
+                        pst = ""
+                permexist(driver, p, permitFileLocation, pt, pst)
+                status = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
+                    ).text
+                if needPR:
+                    inputPR(driver, p, permitFileLocation)
+                    if needDesc == False:
+                        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+                        time.sleep(2)
+                        WebDriverWait(driver, '45').until(
+                            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+                            ).click()
+                        WebDriverWait(driver, '45').until(
+                                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                                ).click()
+                        time.sleep(1)
+                        WebDriverWait(driver, '45').until(
+                                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                                ).click()
+                        deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
+                        deleteApp.send_keys(Keys.CONTROL + "a")
+                        deleteApp.send_keys(Keys.DELETE)
+                        deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
+                        deletePC.send_keys(Keys.CONTROL + "a")
+                        deletePC.send_keys(Keys.DELETE)
+                        save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+                        save.click()
+                        time.sleep(5)
+                if needDesc:
+                    inputDesc(driver, p, permitFileLocation, pt, pst)
+                if needIns:
+                    inputIns(driver, p, permitFileLocation)
+                if needAttach:
+                    inputAttach(driver, p, permitFileLocation)
+                if needFees:
+                    inputFees(driver, p, permitFileLocation, pt, pst)
+                driver.switch_to.parent_frame()
+                with open(permitFileLocation + "/00 Checked Permits.txt", "a") as writecf:
+                    writecf.write(p + "\n")
+                reset += 1
+    else:
+        login(url, driver, central_user, central_pass)
+        permexist(driver, permit, permitFileLocation, permtype, permsubtype)
         status = WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
-            ).text
-    if needIns:
-        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
-        time.sleep(2)
-        WebDriverWait(driver, '45').until(
-            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
-            ).click()
-        WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
-                ).click()
-        try:
-            time.sleep(1)
-            WebDriverWait(driver, '5').until(
-                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'PLAN CHECK')]"))
-                ).click()
-        except TimeoutException:
-            WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl09_C_ctl00_btnRevert']"))
-                ).click()
-            time.sleep(3)
-            driver.switch_to.parent_frame()
-            WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//div[@id='divIconWrapperPermit']"))
+                EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
+                ).text
+        if needPR:
+            inputPR(driver, permit, permitFileLocation)
+            if needDesc == False:
+                driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+                time.sleep(2)
+                WebDriverWait(driver, '45').until(
+                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
                     ).click()
-            time.sleep(2)
-            WebDriverWait(driver, '45').until(
-                    EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
-                    )
-            WebDriverWait(driver, '45').until(
-                    EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
-                    )
-            driver.switch_to.frame("FRMPERMIT")
-            WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
-                )
-            WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
-                ).click()
-            WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
-                ).click()
-            time.sleep(1)
-            WebDriverWait(driver, '5').until(
-                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'PLAN CHECK')]"))
-                    ).click()
-            time.sleep(1)
-        save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
-        save.click()
-        time.sleep(5)
-        inputIns(driver, permit, permitFileLocation)
-        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
-        time.sleep(2)
-        WebDriverWait(driver, '45').until(
-            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
-            ).click()
-        WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
-                ).click()
-        time.sleep(1)
-        WebDriverWait(driver, '45').until(
-                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
-                ).click()
-        save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
-        save.click()
-        time.sleep(5)
-    if needAttach:
-        inputAttach(driver, permit, permitFileLocation)
-    if needFees:
-        inputFees(driver, permit, permitFileLocation, permtype, permsubtype)
+                WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                        ).click()
+                time.sleep(1)
+                WebDriverWait(driver, '45').until(
+                        EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                        ).click()
+                deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
+                deleteApp.send_keys(Keys.CONTROL + "a")
+                deleteApp.send_keys(Keys.DELETE)
+                deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
+                deletePC.send_keys(Keys.CONTROL + "a")
+                deletePC.send_keys(Keys.DELETE)
+                save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+                save.click()
+                time.sleep(5)
+        if needDesc:
+            inputDesc(driver, permit, permitFileLocation, permtype, permsubtype)
+        if needIns:
+            inputIns(driver, permit, permitFileLocation)
+        if needAttach:
+            inputAttach(driver, permit, permitFileLocation)
+        if needFees:
+            inputFees(driver, permit, permitFileLocation, permtype, permsubtype)
     print('program finished')
     return
 

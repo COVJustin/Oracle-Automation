@@ -11,8 +11,6 @@ dic = {"": [{"sub": ""}], "SINGLE FAMILY RESIDENTIAL": [{"sub": ""}, {"sub": "AC
 
 def long_operation_thread(p, pf, cu, cp, t, st, d, f, i, pr, a, window):
     OracleToCS.transfer('https://vall-trk.aspgov.com/CommunityDevelopment/default.aspx', OracleToCS.driver_setup(), p.upper(), pf, cu, cp, t, st, d, f, i, pr, a)
-    if f == True:
-        window["Status"].update(p + " Has Finished Transferring ! DON'T FORGET TO PAY OUT FEES !")
     window["Status"].update(p + " Has Finished Transferring !")
     window.refresh()
 
@@ -20,7 +18,7 @@ sg.theme("DarkGray2")
 inputlayout = [[sg.Text("Select Permit Folder: ", size=(15, 1)), sg.Input(key="PermitFolder"), sg.FolderBrowse(key="PermitFolder")],
          [sg.Text('CS Username: ', size=(15, 1)), sg.InputText(key='CentralUser')],
          [sg.Text('CS Password: ', size=(15, 1)), sg.InputText('', key='CentralPassword', password_char='*')],
-         [sg.Text('Permit Number: ', size=(15, 1)), sg.InputText(key='Permit', change_submits=True)],
+         [sg.Text('Permit Number: ', size=(15, 1)), sg.InputText(key='Permit'), sg.FileBrowse(key="PermitFile")],
          [sg.StatusBar("", size=(58, 10), key='Description')]
         ]
 selectlayout = [
@@ -64,26 +62,7 @@ while True:
                 if (values["PermitFolder"] + "§" + values["CentralUser"] + "§" + values["CentralPassword"]) != cachelogin:
                     with open('cache.txt', 'w') as newcache:
                         newcache.write(values["PermitFolder"] + "§" + values["CentralUser"] + "§" + values["CentralPassword"])
-                if os.path.exists(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip"):
-                    threading.Thread(target=long_operation_thread, args=(values["Permit"].upper(), values["PermitFolder"], values["CentralUser"], values["CentralPassword"], values["Type"], values["SubType"], values["Desc"], values["Fees"], values["Ins"], values["PR"], values["Attach"], window), daemon=True).start()
-                    z = zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip")
-                    if (values["Permit"].upper() + " Fees.csv") in z.namelist() and values["Fees"] == True:
-                        outputstr = "REMEMBER TO PAY OUT FEES !!"
-                        with zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip", 'r') as zin:
-                            feedata = io.StringIO(zin.read(values["Permit"].upper() + " Fees.csv").decode('utf-8'))
-                            reader = csv.reader(feedata)
-                            fd = list(reader)
-                        fd.pop(0)
-                        lastdate = ""
-                        for row in fd:
-                            if row[3] == "DUE":
-                                outputstr += "\nDUE: " + row[0].partition(" = ")[0] + " = " + str(row[1])
-                            if row[6] != "":
-                                lastdate = row[6]
-                        outputstr += "\nLAST PAYMENT DATE: " + lastdate
-                        sg.Popup(outputstr, no_titlebar = True, grab_anywhere = True, keep_on_top = True, modal = True)
-                else:
-                    window['Status'].update("Invalid Permit")
+                threading.Thread(target=long_operation_thread, args=(values["Permit"].upper(), values["PermitFolder"], values["CentralUser"], values["CentralPassword"], values["Type"], values["SubType"], values["Desc"], values["Fees"], values["Ins"], values["PR"], values["Attach"], window), daemon=True).start()
             else:
                 window['Status'].update("Please Complete All Fields")
         elif event == "Type":
