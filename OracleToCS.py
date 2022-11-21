@@ -167,7 +167,9 @@ def permexist(driver, permit, permitFileLocation, permtype, permsubtype):
             feecount = 0
             if len(feerows) > 1:
                 feecount = int(len(feerows) / 2)
+            driver.switch_to.parent_frame()
             for i in range(feecount):
+                infloadcheck(driver)
                 feerow = WebDriverWait(driver, '45').until(
                             EC.presence_of_element_located((By.XPATH, "//div[@id='ctl12_C_ctl00_rGridFees_ctl00_ctl04_radParentActionsMenu']/ul/li/a/img"))
                             )
@@ -186,7 +188,7 @@ def permexist(driver, permit, permitFileLocation, permtype, permsubtype):
                             EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_btnSave']"))
                             ).click()
                 driver.switch_to.parent_frame()
-                infloadcheck(driver)
+            infloadcheck(driver)
             inspcount = driver.find_elements(By.CLASS_NAME, "Inspections-ListItem")
             for i in range(len(inspcount)):
                 insprow = WebDriverWait(driver, '45').until(
@@ -494,10 +496,8 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
             EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
             )
         driver.switch_to.frame("FRMPERMIT")
-    WebDriverWait(driver, '45').until(
-            EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
-            )
-    time.sleep(2)
+    driver.switch_to.parent_frame()
+    infloadcheck(driver)
     WebDriverWait(driver, '45').until(
             EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
             ).click()
@@ -706,11 +706,13 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
                     EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
                     )
             driver.switch_to.frame("FRMPERMIT")
-            time.sleep(3)
-            valField = WebDriverWait(driver, '45').until(
+            WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$rGridValuations$ctl00$ctl04$txtParentQty']"))
                     )
-            valField.send_keys(valuation)
+            time.sleep(4)
+            WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$rGridValuations$ctl00$ctl04$txtParentQty']"))
+                    ).send_keys(valuation)
             WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$imgBtnSaveAllValuationsTop']"))
                     ).click()
@@ -1244,14 +1246,21 @@ def inputIns(driver, permit, permitFileLocation):
         for row in range(len(insData)):
             tempstatus = insData[row][2].upper()
             if tempstatus != "CANCELED" and tempstatus != "PENDING":
-                tempstatus = insData[row][17].upper()
+                tempstatus = insResultDic[insData[row][17].upper()]
             sch = re.findall('\d{1,2}[/]\d{1,2}[/]\d{1,2}', insData[row][15])
             if len(sch) > 0:
                 tempsch = sch[0][:-2] + "20" + sch[0][-2:]
             else:
                 tempsch = "(mm/dd/yy)"
             if (insData[row][1][:17] + tempstatus + tempsch) not in pmarray:
-                WebDriverWait(driver, '20').until(
+                try:
+                    WebDriverWait(driver, '20').until(
+                        EC.presence_of_element_located((By.XPATH, '//*[@id="ctl14_C_ctl00_btnAddInspection"]'))
+                        ).click()
+                except ElementClickInterceptedException:
+                    driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+                    time.sleep(2)
+                    WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, '//*[@id="ctl14_C_ctl00_btnAddInspection"]'))
                         ).click()
                 time.sleep(3)
@@ -1456,13 +1465,16 @@ def inputAttach(driver, permit, permitFileLocation):
                 EC.presence_of_element_located((By.XPATH, "//input[@id='RadAsyncUpload1file0']"))
                 )
         filestring = ""
+        cbcount = 0
         for filename in filelist:
-            filestring += permitFileLocation + "/" + filename + " \n "
+            if not filename.endswith(".svg"):
+                filestring += permitFileLocation + "/" + filename + " \n "
+                cbcount += 1
         upload.send_keys(filestring.rstrip())
         checkboxes = WebDriverWait(driver, '45').until(
                 EC.presence_of_all_elements_located((By.XPATH, "//input[@type='checkbox']"))
                 )
-        while len(checkboxes) != len(filelist):
+        while len(checkboxes) != cbcount:
             time.sleep(2)
             checkboxes = WebDriverWait(driver, '45').until(
                 EC.presence_of_all_elements_located((By.XPATH, "//input[@type='checkbox']"))
