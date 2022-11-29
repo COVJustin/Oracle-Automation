@@ -669,20 +669,39 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
             EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblApplicantNameNoEdit']"))
             ).text
     if applicantexist == " ":
-        applicantrow = WebDriverWait(driver, '45').until(
-            EC.presence_of_element_located((By.XPATH, "//span[contains(.,'APPLICANT')]/../../../../../../.."))
-            )
-        applicantedit = WebDriverWait(applicantrow, '45').until(
-            EC.presence_of_all_elements_located((By.XPATH, "./child::td"))
-            )
-        WebDriverWait(applicantedit[2], '45').until(
-            EC.presence_of_element_located((By.XPATH, ".//input"))
-            ).click()
-        driver.switch_to.parent_frame()
-        applicantinner = WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.NAME, 'rw'))
+        try:
+            applicantrow = WebDriverWait(driver, '10').until(
+                EC.presence_of_element_located((By.XPATH, "//span[contains(.,'APPLICANT')]/../../../../../../.."))
                 )
-        driver.switch_to.frame(applicantinner)
+            applicantedit = WebDriverWait(applicantrow, '45').until(
+                EC.presence_of_all_elements_located((By.XPATH, "./child::td"))
+                )
+            WebDriverWait(applicantedit[2], '45').until(
+                EC.presence_of_element_located((By.XPATH, ".//input"))
+                ).click()
+            driver.switch_to.parent_frame()
+            applicantinner = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, 'rw'))
+                    )
+            driver.switch_to.frame(applicantinner)
+        except TimeoutException:
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl10_C_ctl00_btnAddContact']"))
+                ).click()
+            time.sleep(2)
+            driver.switch_to.parent_frame()
+            applicantinner = WebDriverWait(driver, '45').until(
+                    EC.presence_of_element_located((By.NAME, 'rw'))
+                    )
+            driver.switch_to.frame(applicantinner)
+            WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_ddContactType_Input']"))
+                ).click()
+            time.sleep(2)
+            WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'APPLICANT')]"))
+                ).click()
+            time.sleep(1)
         nameentry = WebDriverWait(driver, '45').until(
                 EC.presence_of_element_located((By.XPATH, "//input[@id='ctl08_txtName']"))
                 )
@@ -1512,7 +1531,7 @@ def inputAttach(driver, permit, permitFileLocation):
         filestring = ""
         cbcount = 0
         for filename in filelist:
-            if not filename.endswith(".svg") and not filename.endswith(".HEIC"):
+            if not filename.endswith(".svg") and not filename.endswith(".HEIC") and not filename.endswith(".heic"):
                 filestring += permitFileLocation + "/" + filename + " \n "
                 cbcount += 1
         upload.send_keys(filestring.rstrip())
