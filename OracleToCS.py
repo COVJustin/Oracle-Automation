@@ -77,7 +77,7 @@ def permexist(driver, permit, permitFileLocation, permtype, permsubtype):
                 with zin.open(permit + " Information.csv") as infofile:
                     inforeader = pd.read_csv(infofile)
                     infoData = pd.DataFrame(inforeader)
-                parcel = str(infoData.at[0, 'Parcel ID'])
+                parcel = str(infoData.at[0, 'Parcel ID']).replace("-", "")
                 parceladdr = str(infoData.at[0, 'Parcel Address'])
                 cdesc =infoData.at[0, 'Central Square Description'] 
                 parcel = parcel.zfill(10)
@@ -204,6 +204,7 @@ def permexist(driver, permit, permitFileLocation, permtype, permsubtype):
                 feecount = int(len(feerows) / 2)
             driver.switch_to.parent_frame()
             for i in range(feecount):
+                time.sleep(1)
                 infloadcheck(driver)
                 feerow = WebDriverWait(driver, '45').until(
                             EC.presence_of_element_located((By.XPATH, "//div[@id='ctl12_C_ctl00_rGridFees_ctl00_ctl04_radParentActionsMenu']/ul/li/a/img"))
@@ -742,6 +743,7 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
         try:
             driver.find_element(By.XPATH, "//input[@name = 'ctl11$C$ctl00$imgBtnEditAllValuationsBottom']")
         except NoSuchElementException:
+            time.sleep(1)
             WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl11$C$ctl00$btnAddValuation']"))
                     ).click()
@@ -1244,7 +1246,7 @@ def inputIns(driver, permit, permitFileLocation):
         try:
             time.sleep(1)
             WebDriverWait(driver, '5').until(
-                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'APPROVED')]"))
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'ISSUED')]"))
                 ).click()
         except TimeoutException:
             WebDriverWait(driver, '45').until(
@@ -1274,7 +1276,7 @@ def inputIns(driver, permit, permitFileLocation):
                 ).click()
             time.sleep(1)
             WebDriverWait(driver, '5').until(
-                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'APPROVED')]"))
+                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'ISSUED')]"))
                     ).click()
             time.sleep(1)
         save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
@@ -1372,6 +1374,7 @@ def inputIns(driver, permit, permitFileLocation):
                 WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, '//*[@id="ctl08_ddInspector_Input"]'))
                         ).click()
+                bppwdef = False
                 try:
                     time.sleep(2.5)
                     driver.find_element(By.XPATH, "//li[contains(.,'"+ inspect +"')]").click()
@@ -1384,6 +1387,7 @@ def inputIns(driver, permit, permitFileLocation):
                         WebDriverWait(driver, '20').until(
                             EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'BUILDING INSPECTIONS BUCKET')]"))
                             ).click()
+                    bppwdef = True
                 time.sleep(2)
                 scheduled = WebDriverWait(driver, '20').until(
                         EC.presence_of_element_located((By.XPATH, "//input[@name = 'ctl08$calScheduledDate$dateInput']"))
@@ -1448,6 +1452,25 @@ def inputIns(driver, permit, permitFileLocation):
                     time.sleep(3)
                 except TimeoutException:
                     ""
+                if bppwdef == True:
+                    WebDriverWait(driver, '45').until(
+                        EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
+                        )
+                    inspectioncap = driver.find_element(By.NAME, 'rwEvents')
+                    driver.switch_to.frame(inspectioncap)
+                    time.sleep(2)
+                    try:
+                        WebDriverWait(driver, '5').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id='btnYes0']"))
+                            ).click()
+                        time.sleep(2)
+                        WebDriverWait(driver, '5').until(
+                            EC.presence_of_element_located((By.XPATH, "//input[@id='btnClose']"))
+                            ).click()
+                        time.sleep(3)
+                    except TimeoutException:
+                        ""
+                    driver.switch_to.parent_frame()
                 WebDriverWait(driver, '45').until(
                         EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
                         )
@@ -1460,7 +1483,6 @@ def inputIns(driver, permit, permitFileLocation):
                     WebDriverWait(driver, '45').until(
                             EC.presence_of_element_located((By.XPATH, "//input[@id = 'ctl14_C_ctl00_rlvInspections_ctrl" + str(len(premadeinspectioncount) + editcounter) +"_btnEdit']"))
                             ).click()
-                    editcounter += 1
                     driver.switch_to.parent_frame()
                     innerframe = driver.find_element(By.NAME,'rw')
                     driver.switch_to.frame(innerframe)
@@ -1480,6 +1502,7 @@ def inputIns(driver, permit, permitFileLocation):
                             EC.presence_of_element_located((By.NAME, 'FRMPERMIT'))
                             )
                     driver.switch_to.frame("FRMPERMIT")
+                editcounter += 1
         driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
         time.sleep(2)
         WebDriverWait(driver, '45').until(
@@ -1531,7 +1554,7 @@ def inputAttach(driver, permit, permitFileLocation):
         filestring = ""
         cbcount = 0
         for filename in filelist:
-            if not filename.endswith(".svg") and not filename.endswith(".HEIC") and not filename.endswith(".heic"):
+            if not filename.endswith(".svg") and not filename.endswith(".HEIC") and not filename.endswith(".heic") and not filename.endswith(".DNG") and not filename.endswith(".geprint"):
                 filestring += permitFileLocation + "/" + filename + " \n "
                 cbcount += 1
         upload.send_keys(filestring.rstrip())
