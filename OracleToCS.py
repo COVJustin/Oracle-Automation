@@ -446,10 +446,7 @@ def inputPR(driver, permit, permitFileLocation):
                 WebDriverWait(driver, '45').until(
                         EC.presence_of_element_located((By.CSS_SELECTOR, "tr:nth-child(1) > td:nth-child(1) > img:nth-child(1)"))
                         ).click()
-                WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.NAME, "FRMPERMIT"))
-                        )
-                driver.switch_to.frame("FRMPERMIT")
+                infloadcheck(driver)
                 try:
                     WebDriverWait(driver, '45').until(
                         EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl15_C_ctl00_rlvReviews_ctrl" + str(len(premadereviewcount) + editcounter) + "_btnEdit']"))
