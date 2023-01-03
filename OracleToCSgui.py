@@ -39,7 +39,7 @@ startlayout = [[sg.Push(), sg.Button("Transfer", size=(8, 2)), sg.Push()],
 toplayout = [sg.Column(inputlayout), sg.Column(selectlayout)]
 layout = [toplayout, startlayout]
 
-window = sg.Window('OracleToCS', layout, size=(850,375), finalize=True)
+window = sg.Window('OracleToCS', layout, size=(850,415), finalize=True)
 descup = window['Description'].update
 permup = window['Type'].update
 spermup = window['SubType'].update
