@@ -643,6 +643,24 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
     WebDriverWait(driver, '45').until(
             EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
             )
+    curstatus = WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
+            ).text
+    if curstatus != status:
+        WebDriverWait(driver, '45').until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+            ).click()
+        # Change Status
+        WebDriverWait(driver, '45').until(
+                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                ).click()
+        time.sleep(1)
+        WebDriverWait(driver, '5').until(
+                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                ).click() 
+        save2 = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']") 
+        save2.click()
+        time.sleep(5)
     WebDriverWait(driver, '45').until(
             EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnAddNotes']"))
             ).click()
@@ -651,9 +669,20 @@ def inputDesc(driver, permit, permitFileLocation, permtype, permsubtype):
             EC.presence_of_element_located((By.NAME, 'rw'))
             )
     driver.switch_to.frame(noteinner)
-    WebDriverWait(driver, '45').until(
-            EC.element_to_be_clickable((By.XPATH, "//textarea[@id='ctl08_txtNoteSave']"))
-            ).send_keys(bigdesc)
+    notecount = len(driver.find_elements(By.XPATH, "//input[@title='Delete Note']"))
+    descexist = False
+    if notecount != 0:
+        notecount = notecount / 2
+        for notenumber in range(int(notecount)):
+            notecontent = WebDriverWait(driver, '45').until(
+            EC.presence_of_element_located((By.XPATH, "//span[@id='ctl08_rlvNotes_ctrl" + str(notenumber) + "_txtNoteEdit']"))
+            ).text
+            if notecontent == bigdesc:
+                descexist = True
+    if descexist == False:
+        WebDriverWait(driver, '45').until(
+                EC.element_to_be_clickable((By.XPATH, "//textarea[@id='ctl08_txtNoteSave']"))
+                ).send_keys(bigdesc)
     WebDriverWait(driver, '45').until(
             EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl08_btnSave']"))
             ).click()
@@ -1453,21 +1482,24 @@ def inputIns(driver, permit, permitFileLocation):
                     WebDriverWait(driver, '45').until(
                         EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
                         )
-                    inspectioncap = driver.find_element(By.NAME, 'rwEvents')
-                    driver.switch_to.frame(inspectioncap)
-                    time.sleep(2)
                     try:
-                        WebDriverWait(driver, '5').until(
-                            EC.presence_of_element_located((By.XPATH, "//input[@id='btnYes0']"))
-                            ).click()
+                        inspectioncap = driver.find_element(By.NAME, 'rwEvents')
+                        driver.switch_to.frame(inspectioncap)
                         time.sleep(2)
-                        WebDriverWait(driver, '5').until(
-                            EC.presence_of_element_located((By.XPATH, "//input[@id='btnClose']"))
-                            ).click()
-                        time.sleep(3)
-                    except TimeoutException:
+                        try:
+                            WebDriverWait(driver, '5').until(
+                                EC.presence_of_element_located((By.XPATH, "//input[@id='btnYes0']"))
+                                ).click()
+                            time.sleep(2)
+                            WebDriverWait(driver, '5').until(
+                                EC.presence_of_element_located((By.XPATH, "//input[@id='btnClose']"))
+                                ).click()
+                            time.sleep(3)
+                        except TimeoutException:
+                            ""
+                        driver.switch_to.parent_frame()
+                    except NoSuchElementException:
                         ""
-                    driver.switch_to.parent_frame()
                 WebDriverWait(driver, '45').until(
                         EC.invisibility_of_element_located((By.XPATH, "//div[@id='overlay']"))
                         )
@@ -1587,158 +1619,162 @@ def inputAttach(driver, permit, permitFileLocation):
         time.sleep(2)
 
 def transfer(url, driver, permit, permitFileLocation, central_user, central_pass, permtype, permsubtype, needDesc, needFees, needIns, needPR, needAttach):
-    if os.path.exists(permit):
-        with open(permit, "r") as permfile:
-            permlines = permfile.readlines()
-        permlines = (i.strip() for i in permlines)
-        login(url, driver, central_user, central_pass)
-        reset = 0
-        for p in permlines:
-            with open(permitFileLocation + "/00 Checked Permits.txt", "r") as checkfile:
-                checklines = checkfile.readlines()
-            checklines = (i.strip() for i in checklines)
-            if p not in checklines:
-                if reset == 15:
-                    driver.close()
-                    driver = driver_setup()
-                    login(url, driver, central_user, central_pass)
-                    reset = 0
-                with zipfile.ZipFile(permitFileLocation + "/" + p + ".zip", 'r') as zin:
-                    with zin.open(p + " Information.csv") as infofile:
-                        inforeader = pd.read_csv(infofile)
-                        infoData = pd.DataFrame(inforeader)
-                if p.startswith("BP"):
-                    rvc = infoData.at[0, "Residential/Commercial"]
-                    if rvc == "RESIDENTIAL":
-                        pt = "SINGLE FAMILY RESIDENTIAL"
-                        pst = "ALTERATION/REMODEL"
-                    else:
-                        pt = "BUILDING COMMERCIAL"
-                        pst = "ALTERATION/REMODEL"
-                elif p.startswith("EL"):
-                    rvc = infoData.at[0, "Residential/Commercial"]
-                    if rvc == "RESIDENTIAL":
-                        pt = "ELECTRICAL RESIDENTIAL"
-                        pst = "UP TO 324A"
-                    else:
-                        pt = "ELECTRICAL COMMERCIAL"
-                        pst = "UP TO 324A"
-                elif p.startswith("ME"):
-                    rvc = infoData.at[0, "Residential/Commercial"]
-                    if rvc == "RESIDENTIAL":
-                        pt = "MECHANICAL RESIDENTIAL"
-                        pst = "FURNACE AND/OR AC ONLY"
-                    else:
-                        pt = "MECHANICAL COMMERCIAL"
-                        pst = "EQUIPMENT"
-                elif p.startswith("PL"):
-                    rvc = infoData.at[0, "Residential/Commercial"]
-                    if rvc == "RESIDENTIAL":
-                        pt = "PLUMBING RESIDENTIAL"
-                        pst = "WATER HEATER"
-                    else:
-                        pt = "PLUMBING COMMERCIAL"
-                        pst = "WATER HEATER REPLACEMENT"
-                elif p.startswith("PW"):
-                    if infoData.at[0, 'Service Type'] == "ENCROACHMENT":
-                        pt = "ENCROACHMENT"
-                        pst = "Encroachment"
-                    elif infoData.at[0, 'Service Type'] == "EXCAVATION":
-                        pt ="EXCAVATION"
-                        pst = "Utility Planned Proj"
-                    elif infoData.at[0, 'Service Type'] == "ADDRESS CHANGE" or infoData.at[0, 'Service Type'] == "ADDRESS ASSIGNMENT":
-                        pt = "OTHER SERVICES"
-                        pst = "ADDRESS CHG/CRTN"
-                    elif infoData.at[0, 'Service Type'] == "DREDGING" or infoData.at[0, 'Service Type'] == "GRADING":
-                        pt = "GRADING"
-                        pst = "Building Permit PW"
-                    elif infoData.at[0, 'Service Type'] == "FULL ABANDONMENT" or infoData.at[0, 'Service Type'] == "PARTIAL ABANDONMENT":
-                        pt = "ABANDONMENT OF RIGHT"
-                        pst = ""
-                    elif infoData.at[0, 'Service Type'] == "IMPROVEMENT":
-                        pt = "IMPROVEMENT"
-                        pst = "Building Permit PW"
-                    elif infoData.at[0, 'Service Type'] == "SPECIAL EVENTS":
-                        pt = "SPECIAL EVENTS"
-                        pst = ""
-                permexist(driver, p, permitFileLocation, pt, pst)
-                status = WebDriverWait(driver, '45').until(
+    try:
+        if os.path.exists(permit):
+            with open(permit, "r") as permfile:
+                permlines = permfile.readlines()
+            permlines = (i.strip() for i in permlines)
+            login(url, driver, central_user, central_pass)
+            reset = 0
+            for p in permlines:
+                with open(permitFileLocation + "/00 Checked Permits.txt", "r") as checkfile:
+                    checklines = checkfile.readlines()
+                checklines = (i.strip() for i in checklines)
+                if p not in checklines:
+                    if reset == 15:
+                        driver.close()
+                        driver = driver_setup()
+                        login(url, driver, central_user, central_pass)
+                        reset = 0
+                    with zipfile.ZipFile(permitFileLocation + "/" + p + ".zip", 'r') as zin:
+                        with zin.open(p + " Information.csv") as infofile:
+                            inforeader = pd.read_csv(infofile)
+                            infoData = pd.DataFrame(inforeader)
+                    if p.startswith("BP"):
+                        rvc = infoData.at[0, "Residential/Commercial"]
+                        if rvc == "RESIDENTIAL":
+                            pt = "SINGLE FAMILY RESIDENTIAL"
+                            pst = "ALTERATION/REMODEL"
+                        else:
+                            pt = "BUILDING COMMERCIAL"
+                            pst = "ALTERATION/REMODEL"
+                    elif p.startswith("EL"):
+                        rvc = infoData.at[0, "Residential/Commercial"]
+                        if rvc == "RESIDENTIAL":
+                            pt = "ELECTRICAL RESIDENTIAL"
+                            pst = "UP TO 324A"
+                        else:
+                            pt = "ELECTRICAL COMMERCIAL"
+                            pst = "UP TO 324A"
+                    elif p.startswith("ME"):
+                        rvc = infoData.at[0, "Residential/Commercial"]
+                        if rvc == "RESIDENTIAL":
+                            pt = "MECHANICAL RESIDENTIAL"
+                            pst = "FURNACE AND/OR AC ONLY"
+                        else:
+                            pt = "MECHANICAL COMMERCIAL"
+                            pst = "EQUIPMENT"
+                    elif p.startswith("PL"):
+                        rvc = infoData.at[0, "Residential/Commercial"]
+                        if rvc == "RESIDENTIAL":
+                            pt = "PLUMBING RESIDENTIAL"
+                            pst = "WATER HEATER"
+                        else:
+                            pt = "PLUMBING COMMERCIAL"
+                            pst = "WATER HEATER REPLACEMENT"
+                    elif p.startswith("PW"):
+                        if infoData.at[0, 'Service Type'] == "ENCROACHMENT":
+                            pt = "ENCROACHMENT"
+                            pst = "Encroachment"
+                        elif infoData.at[0, 'Service Type'] == "EXCAVATION":
+                            pt ="EXCAVATION"
+                            pst = "Utility Planned Proj"
+                        elif infoData.at[0, 'Service Type'] == "ADDRESS CHANGE" or infoData.at[0, 'Service Type'] == "ADDRESS ASSIGNMENT":
+                            pt = "OTHER SERVICES"
+                            pst = "ADDRESS CHG/CRTN"
+                        elif infoData.at[0, 'Service Type'] == "DREDGING" or infoData.at[0, 'Service Type'] == "GRADING":
+                            pt = "GRADING"
+                            pst = "Building Permit PW"
+                        elif infoData.at[0, 'Service Type'] == "FULL ABANDONMENT" or infoData.at[0, 'Service Type'] == "PARTIAL ABANDONMENT":
+                            pt = "ABANDONMENT OF RIGHT"
+                            pst = ""
+                        elif infoData.at[0, 'Service Type'] == "IMPROVEMENT":
+                            pt = "IMPROVEMENT"
+                            pst = "Building Permit PW"
+                        elif infoData.at[0, 'Service Type'] == "SPECIAL EVENTS":
+                            pt = "SPECIAL EVENTS"
+                            pst = ""
+                    permexist(driver, p, permitFileLocation, pt, pst)
+                    status = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
+                        ).text
+                    if needPR:
+                        inputPR(driver, p, permitFileLocation)
+                        if needDesc == False:
+                            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+                            time.sleep(2)
+                            WebDriverWait(driver, '45').until(
+                                EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+                                ).click()
+                            WebDriverWait(driver, '45').until(
+                                    EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
+                                    ).click()
+                            time.sleep(1)
+                            WebDriverWait(driver, '45').until(
+                                    EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                                    ).click()
+                            deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
+                            deleteApp.send_keys(Keys.CONTROL + "a")
+                            deleteApp.send_keys(Keys.DELETE)
+                            deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
+                            deletePC.send_keys(Keys.CONTROL + "a")
+                            deletePC.send_keys(Keys.DELETE)
+                            save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+                            save.click()
+                            time.sleep(5)
+                    if needDesc:
+                        inputDesc(driver, p, permitFileLocation, pt, pst)
+                    if needIns:
+                        inputIns(driver, p, permitFileLocation)
+                    if needAttach:
+                        inputAttach(driver, p, permitFileLocation)
+                    if needFees:
+                        inputFees(driver, p, permitFileLocation, pt, pst)
+                    driver.switch_to.parent_frame()
+                    with open(permitFileLocation + "/00 Checked Permits.txt", "a") as writecf:
+                        writecf.write(p + "\n")
+                    reset += 1
+        else:
+            login(url, driver, central_user, central_pass)
+            permexist(driver, permit, permitFileLocation, permtype, permsubtype)
+            status = WebDriverWait(driver, '45').until(
                     EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
                     ).text
-                if needPR:
-                    inputPR(driver, p, permitFileLocation)
-                    if needDesc == False:
-                        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
-                        time.sleep(2)
-                        WebDriverWait(driver, '45').until(
-                            EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+            if needPR:
+                inputPR(driver, permit, permitFileLocation)
+                if needDesc == False:
+                    driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
+                    time.sleep(2)
+                    WebDriverWait(driver, '45').until(
+                        EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
+                        ).click()
+                    WebDriverWait(driver, '45').until(
+                            EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
                             ).click()
-                        WebDriverWait(driver, '45').until(
-                                EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
-                                ).click()
-                        time.sleep(1)
-                        WebDriverWait(driver, '45').until(
-                                EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
-                                ).click()
-                        deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
-                        deleteApp.send_keys(Keys.CONTROL + "a")
-                        deleteApp.send_keys(Keys.DELETE)
-                        deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
-                        deletePC.send_keys(Keys.CONTROL + "a")
-                        deletePC.send_keys(Keys.DELETE)
-                        save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
-                        save.click()
-                        time.sleep(5)
-                if needDesc:
-                    inputDesc(driver, p, permitFileLocation, pt, pst)
-                if needIns:
-                    inputIns(driver, p, permitFileLocation)
-                if needAttach:
-                    inputAttach(driver, p, permitFileLocation)
-                if needFees:
-                    inputFees(driver, p, permitFileLocation, pt, pst)
-                driver.switch_to.parent_frame()
-                with open(permitFileLocation + "/00 Checked Permits.txt", "a") as writecf:
-                    writecf.write(p + "\n")
-                reset += 1
-    else:
-        login(url, driver, central_user, central_pass)
-        permexist(driver, permit, permitFileLocation, permtype, permsubtype)
-        status = WebDriverWait(driver, '45').until(
-                EC.presence_of_element_located((By.XPATH, "//span[@id='ctl09_C_ctl00_lblStatus']"))
-                ).text
-        if needPR:
-            inputPR(driver, permit, permitFileLocation)
-            if needDesc == False:
-                driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + Keys.HOME)
-                time.sleep(2)
-                WebDriverWait(driver, '45').until(
-                    EC.element_to_be_clickable((By.XPATH, "//input[@id='ctl09_C_ctl00_btnEdit']"))
-                    ).click()
-                WebDriverWait(driver, '45').until(
-                        EC.presence_of_element_located((By.XPATH, "//*[@id='ctl09_C_ctl00_ddStatus_Input']"))
-                        ).click()
-                time.sleep(1)
-                WebDriverWait(driver, '45').until(
-                        EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
-                        ).click()
-                deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
-                deleteApp.send_keys(Keys.CONTROL + "a")
-                deleteApp.send_keys(Keys.DELETE)
-                deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
-                deletePC.send_keys(Keys.CONTROL + "a")
-                deletePC.send_keys(Keys.DELETE)
-                save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
-                save.click()
-                time.sleep(5)
-        if needDesc:
-            inputDesc(driver, permit, permitFileLocation, permtype, permsubtype)
-        if needIns:
-            inputIns(driver, permit, permitFileLocation)
-        if needAttach:
-            inputAttach(driver, permit, permitFileLocation)
-        if needFees:
-            inputFees(driver, permit, permitFileLocation, permtype, permsubtype)
+                    time.sleep(1)
+                    WebDriverWait(driver, '45').until(
+                            EC.element_to_be_clickable((By.XPATH, "//li[contains(.,'"+ status +"')]"))
+                            ).click()
+                    deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
+                    deleteApp.send_keys(Keys.CONTROL + "a")
+                    deleteApp.send_keys(Keys.DELETE)
+                    deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
+                    deletePC.send_keys(Keys.CONTROL + "a")
+                    deletePC.send_keys(Keys.DELETE)
+                    save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
+                    save.click()
+                    time.sleep(5)
+            if needDesc:
+                inputDesc(driver, permit, permitFileLocation, permtype, permsubtype)
+            if needIns:
+                inputIns(driver, permit, permitFileLocation)
+            if needAttach:
+                inputAttach(driver, permit, permitFileLocation)
+            if needFees:
+                inputFees(driver, permit, permitFileLocation, permtype, permsubtype)
+    except:
+        driver.close()
+        transfer(url, driver_setup(), permit, permitFileLocation, central_user, central_pass, permtype, permsubtype, needDesc, needFees, needIns, needPR, needAttach)
     print('program finished')
     return
 
