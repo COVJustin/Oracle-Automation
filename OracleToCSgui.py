@@ -18,8 +18,9 @@ sg.theme("DarkGray2")
 inputlayout = [[sg.Text("Select Permit Folder: ", size=(15, 1)), sg.Input(key="PermitFolder"), sg.FolderBrowse(key="PermitFolder")],
          [sg.Text('CS Username: ', size=(15, 1)), sg.InputText(key='CentralUser')],
          [sg.Text('CS Password: ', size=(15, 1)), sg.InputText('', key='CentralPassword', password_char='*')],
-         [sg.Text('Permit Number: ', size=(15, 1)), sg.InputText(key='Permit'), sg.FileBrowse(key="PermitFile")],
-         [sg.StatusBar("", size=(58, 10), key='Description')]
+         [sg.Text('Permit Number: ', size=(15, 1)), sg.InputText(key='Permit'), sg.FileBrowse(key="Permit")],
+         [sg.StatusBar("", size=(58, 10), key='Description')],
+         [sg.Push(), sg.Button("Check", size=(5, 1)), sg.Push()]
         ]
 selectlayout = [
          [sg.Text('Type: ', size=(7, 1)), sg.Combo(list(dic.keys()),enable_events=True, default_value='',key='Type', size=(24, 1), readonly=True)],
@@ -69,37 +70,38 @@ while True:
             item = values[event]
             title_list = [i["sub"] for i in dic[item]]
             window['SubType'].update(value=title_list[0], values=title_list)
-        elif os.path.exists(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip"):
-            if values["Permit"].upper().startswith("PW"):
-                with zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip", 'r') as zin:
-                    with zin.open(values["Permit"].upper() + " Information.csv") as infofile:
-                        inforeader = pd.read_csv(infofile)
-                        infoData = pd.DataFrame(inforeader)
-                    descup("SERVICE TYPE: " + infoData.at[0, 'Service Type'] + "\n\nDESCRIPTION:\n" + infoData.at[0, 'Oracle Description'])
-                    if infoData.at[0, 'Service Type'] == "ENCROACHMENT":
-                        permup("ENCROACHMENT")
-                        spermup("Encroachment")
-                    elif infoData.at[0, 'Service Type'] == "EXCAVATION":
-                        permup("EXCAVATION")
-                        spermup("Utility Planned Proj")
-                    elif infoData.at[0, 'Service Type'] == "ADDRESS CHANGE" or infoData.at[0, 'Service Type'] == "ADDRESS ASSIGNMENT":
-                        permup("OTHER SERVICES")
-                        spermup("ADDRESS CHG/CRTN")
-                    elif infoData.at[0, 'Service Type'] == "DREDGING" or infoData.at[0, 'Service Type'] == "GRADING":
-                        permup("GRADING")
-                        spermup("Building Permit PW")
-                    elif infoData.at[0, 'Service Type'] == "FULL ABANDONMENT" or infoData.at[0, 'Service Type'] == "PARTIAL ABANDONMENT":
-                        permup("ABANDONMENT OF RIGHT")
-                        spermup("")
-                    elif infoData.at[0, 'Service Type'] == "IMPROVEMENT":
-                        permup("IMPROVEMENT")
-                        spermup("Building Permit PW")
-                    elif infoData.at[0, 'Service Type'] == "SPECIAL EVENTS":
-                        permup("SPECIAL EVENTS")
-                        spermup("")
-            else:
-                with zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip", 'r') as zin:
-                    with zin.open(values["Permit"].upper() + " Information.csv") as infofile:
-                        inforeader = pd.read_csv(infofile)
-                        infoData = pd.DataFrame(inforeader)
-                    descup("RESVCOM: " + infoData.at[0, 'Residential/Commercial'] + "\n\nDESCRIPTION:\n" + infoData.at[0, 'Oracle Description'])
+        elif event == "Check":
+            if os.path.exists(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip"):
+                if values["Permit"].upper().startswith("PW"):
+                    with zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip", 'r') as zin:
+                        with zin.open(values["Permit"].upper() + " Information.csv") as infofile:
+                            inforeader = pd.read_csv(infofile)
+                            infoData = pd.DataFrame(inforeader)
+                        descup("SERVICE TYPE: " + infoData.at[0, 'Service Type'] + "\n\nDESCRIPTION:\n" + infoData.at[0, 'Oracle Description'])
+                        if infoData.at[0, 'Service Type'] == "ENCROACHMENT":
+                            permup("ENCROACHMENT")
+                            spermup("Encroachment")
+                        elif infoData.at[0, 'Service Type'] == "EXCAVATION":
+                            permup("EXCAVATION")
+                            spermup("Utility Planned Proj")
+                        elif infoData.at[0, 'Service Type'] == "ADDRESS CHANGE" or infoData.at[0, 'Service Type'] == "ADDRESS ASSIGNMENT":
+                            permup("OTHER SERVICES")
+                            spermup("ADDRESS CHG/CRTN")
+                        elif infoData.at[0, 'Service Type'] == "DREDGING" or infoData.at[0, 'Service Type'] == "GRADING":
+                            permup("GRADING")
+                            spermup("Building Permit PW")
+                        elif infoData.at[0, 'Service Type'] == "FULL ABANDONMENT" or infoData.at[0, 'Service Type'] == "PARTIAL ABANDONMENT":
+                            permup("ABANDONMENT OF RIGHT")
+                            spermup("")
+                        elif infoData.at[0, 'Service Type'] == "IMPROVEMENT":
+                            permup("IMPROVEMENT")
+                            spermup("Building Permit PW")
+                        elif infoData.at[0, 'Service Type'] == "SPECIAL EVENTS":
+                            permup("SPECIAL EVENTS")
+                            spermup("")
+                else:
+                    with zipfile.ZipFile(values["PermitFolder"] + "/" + values["Permit"].upper() + ".zip", 'r') as zin:
+                        with zin.open(values["Permit"].upper() + " Information.csv") as infofile:
+                            inforeader = pd.read_csv(infofile)
+                            infoData = pd.DataFrame(inforeader)
+                        descup("RESVCOM: " + infoData.at[0, 'Residential/Commercial'] + "\n\nDESCRIPTION:\n" + infoData.at[0, 'Oracle Description'])
