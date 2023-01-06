@@ -364,13 +364,11 @@ def inputPR(driver, permit, permitFileLocation):
             pmrev = pmrevtype[:18] + pmcyclenum[0] + pmretdate
             pmarray.append(pmrev)
         editcounter = 0
-        print(pmarray)
         for i in range(0, len(reviewData)):
             if reviewData[i][6] == "":
                 tempretdate = "(mm/dd/yyyy)"
             else:
                 tempretdate = reviewData[i][6][:-2] + "20" + reviewData[i][6][-2:]
-            print(reviewData[i][2][:18] + reviewData[i][0] + tempretdate)
             if (reviewData[i][2][:18] + reviewData[i][0] + tempretdate) not in pmarray:
                 try:
                     WebDriverWait(driver, '45').until(
