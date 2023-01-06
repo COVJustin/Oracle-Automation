@@ -358,11 +358,20 @@ def inputPR(driver, permit, permitFileLocation):
             pmcyclenum = WebDriverWait(driver, '45').until(
                         EC.presence_of_element_located((By.XPATH, "//span[@id='ctl15_C_ctl00_rlvReviews_ctrl" + str(i) + "_lblReviewGroup']/span[2]"))
                         ).text
-            pmrev = pmrevtype[:18] + pmcyclenum[0]
+            pmretdate = WebDriverWait(driver, '45').until(
+                        EC.presence_of_element_located((By.XPATH, "//span[@id='ctl15_C_ctl00_rlvReviews_ctrl" + str(i) + "_lblReceivedDate']/span[2]"))
+                        ).text
+            pmrev = pmrevtype[:18] + pmcyclenum[0] + pmretdate
             pmarray.append(pmrev)
         editcounter = 0
+        print(pmarray)
         for i in range(0, len(reviewData)):
-            if (reviewData[i][2][:18] + reviewData[i][0]) not in pmarray:
+            if reviewData[i][6] == "":
+                tempretdate = "(mm/dd/yyyy)"
+            else:
+                tempretdate = reviewData[i][6][:-2] + "20" + reviewData[i][6][-2:]
+            print(reviewData[i][2][:18] + reviewData[i][0] + tempretdate)
+            if (reviewData[i][2][:18] + reviewData[i][0] + tempretdate) not in pmarray:
                 try:
                     WebDriverWait(driver, '45').until(
                             EC.presence_of_element_located((By.XPATH, "//input[@id='ctl15_C_ctl00_btnAddReview']"))
