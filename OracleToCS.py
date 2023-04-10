@@ -866,9 +866,9 @@ def inputFees(driver, permit, permitFileLocation, permtype, permsubtype):
             keywrds = [item[0] for item in data]
             dupes = {value : [y for y, v in enumerate(keywrds) if value == v] for value in set(keywrds)}
             streetclosuredupes = {}
-            if "STREET CLOSURE PERMIT - NON RES = QTY*581" in dupes:
-                streetclosuredupes["STREET CLOSURE PERMIT - NON RES = QTY*581"] = dupes["STREET CLOSURE PERMIT - NON RES = QTY*581"]
-                dupes.pop("STREET CLOSURE PERMIT - NON RES = QTY*581")
+            if "STREET CLOSURE PERMIT - NON RES = QTY*565.16" in dupes:
+                streetclosuredupes["STREET CLOSURE PERMIT - NON RES = QTY*565.16"] = dupes["STREET CLOSURE PERMIT - NON RES = QTY*565.16"]
+                dupes.pop("STREET CLOSURE PERMIT - NON RES = QTY*565.16")
             if "STREET CLOSURE PERMIT - NON RES TECHNOLOGY SURCHARGE = QTY*23" in dupes:
                 streetclosuredupes["STREET CLOSURE PERMIT - NON RES TECHNOLOGY SURCHARGE = QTY*23"] = dupes["STREET CLOSURE PERMIT - NON RES TECHNOLOGY SURCHARGE = QTY*23"]
                 dupes.pop("STREET CLOSURE PERMIT - NON RES TECHNOLOGY SURCHARGE = QTY*23")
@@ -1340,7 +1340,7 @@ def inputIns(driver, permit, permitFileLocation):
                         "DEFICIENT": "CORRECTIONS",
                         "NON-STANDARD": "FAILED",
                         "WARNING/ NOTICE": "POSTED TAG",
-                        "POSTPONED": "CANCELLED"
+                        "POSTPONED": "CANCELED"
         }             
         for row in range(len(insData)):
             tempstatus = insData[row][2].upper()
@@ -1723,9 +1723,6 @@ def transfer(url, driver, permit, permitFileLocation, central_user, central_pass
                             deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
                             deleteApp.send_keys(Keys.CONTROL + "a")
                             deleteApp.send_keys(Keys.DELETE)
-                            deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
-                            deletePC.send_keys(Keys.CONTROL + "a")
-                            deletePC.send_keys(Keys.DELETE)
                             save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
                             save.click()
                             time.sleep(5)
@@ -1765,9 +1762,6 @@ def transfer(url, driver, permit, permitFileLocation, central_user, central_pass
                     deleteApp = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calApprovedDate_dateInput']")
                     deleteApp.send_keys(Keys.CONTROL + "a")
                     deleteApp.send_keys(Keys.DELETE)
-                    deletePC = driver.find_element(By.XPATH, "//input[@id='ctl09_C_ctl00_calOtherDate1_dateInput']")
-                    deletePC.send_keys(Keys.CONTROL + "a")
-                    deletePC.send_keys(Keys.DELETE)
                     save = driver.find_element(By.XPATH, "//input[@name = 'ctl09$C$ctl00$btnSave']")
                     save.click()
                     time.sleep(5)
